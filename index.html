@@ -36,7 +36,6 @@
         @keyframes blink { 50% { opacity: 0.5; } }
         .subtitle { font-size: 1.2rem; color: #94a3b8; margin-bottom: 25px; font-weight: 500; }
         
-        /* Главная сетка сайта */
         .main-broadcast-layout {
             display: flex;
             max-width: 1200px;
@@ -59,7 +58,6 @@
         .video-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; background: transparent; }
         iframe { width: 100% !important; height: 480px !important; border: none; display: block; }
         
-        /* Наш самописный чат */
         .chat-container {
             width: 340px;
             height: 480px;
@@ -126,13 +124,11 @@
         }
         .chat-send-btn:hover { background: #0369a1; }
 
-        /* Адаптивность для телефонов */
         @media (max-width: 1000px) {
             .main-broadcast-layout { flex-direction: column; align-items: center; }
             .chat-container { width: 100%; max-width: 850px; height: 400px; margin-top: 10px; }
         }
 
-        /* Полный экран прячет чат */
         .video-container:fullscreen iframe {
             width: 100vw !important; height: 56.25vw !important; min-height: 100vh !important; min-width: 177.77vh !important;
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -160,19 +156,17 @@
     <div class="subtitle" id="currentTrack">Загрузка эфира...</div>
 
     <div class="main-broadcast-layout">
-        <!-- Плеер -->
         <div class="video-container">
             <div class="video-mask"></div>
             <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
         </div>
 
-        <!-- Наш собственный чат -->
         <div class="chat-container">
             <div class="chat-header">💬 Чат трансляции</div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput" class="chat-input" placeholder="Напишите сообщение..." maxlength="150">
-                <button class="chat-send-btn" onclick="sendMessage()">➔</button>
+                <button class="chat-send-btn" id="sendBtn">➔</button>
             </div>
         </div>
     </div>
@@ -183,87 +177,95 @@
     </div>
 
     <div class="online-counter">
-        • Онлайн: <span class="online-number" id="onlineCount">Загрузка...</span> чел.
+        • Онлайн: <span class="online-number" id="onlineCount">1</span> чел.
     </div>
 
-    <!-- Firebase СКРИПТЫ -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
-
     <script>
-        // Твои настройки school6by
-        const firebaseConfig = {
-            apiKey: "AIzaSyDs1PGAs9PlAifxph8FZYjjLrkwvttLTxE",
-            authDomain: "://firebaseapp.com",
-            databaseURL: "https://firebaseio.com",
-            projectId: "school6by",
-            storageBucket: "school6by.firebasestorage.app",
-            messagingSenderId: "295503050789",
-            appId: "1:295503050789:web:4627c77bb0d7549da0e7cc"
-        };
-        
-        let database;
-        let myUsername = "";
+        // === АВТОНОМНАЯ ЛОГИКА ЧАТА (БЕЗ СЕРВЕРОВ) ===
+        let myUsername = localStorage.getItem('chat_user') || "";
+        const chatChannel = new BroadcastChannel('veter_tv_chat');
 
-        try {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            
-            // 1. ЛОГИКА ОНЛАЙНА
-            const onlineRef = database.ref('.info/connected');
-            const myPresenceRef = database.ref('online_users').push();
-
-            onlineRef.on('value', (snapshot) => {
-                if (snapshot.val() === true) {
-                    myPresenceRef.set(true);
-                    myPresenceRef.onDisconnect().remove();
-                }
+        // Загрузка сообщений из памяти браузера при старте
+        function loadMessages() {
+            const chatBox = document.getElementById('chatMessages');
+            chatBox.innerHTML = "";
+            const saved = JSON.parse(localStorage.getItem('chat_history') || "[]");
+            saved.forEach(data => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg';
+                msgDiv.innerHTML = `<span class="msg-author">${escapeHTML(data.name)}:</span>${escapeHTML(data.text)}`;
+                chatBox.appendChild(msgDiv);
             });
-
-            database.ref('online_users').on('value', (snapshot) => {
-                const count = snapshot.numChildren();
-                document.getElementById('onlineCount').textContent = count || 1;
-            });
-
-            // 2. ЛОГИКА ЧАТА (Загрузка последних 50 сообщений из базы)
-            database.ref('chat_messages').limitToLast(50).on('value', (snapshot) => {
-                const chatBox = document.getElementById('chatMessages');
-                chatBox.innerHTML = ""; // Очищаем перед обновлением
-                
-                snapshot.forEach((childSnapshot) => {
-                    const data = childSnapshot.val();
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = 'msg';
-                    msgDiv.innerHTML = `<span class="msg-author">${escapeHTML(data.name)}:</span>${escapeHTML(data.text)}`;
-                    chatBox.appendChild(msgDiv);
-                });
-                // Авто-скролл вниз к новым сообщениям
-                chatBox.scrollTop = chatBox.scrollHeight;
-            });
-
-        } catch(e) {
-            document.getElementById('onlineCount').textContent = "1";
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Функция отправки сообщения в Firebase
+        // Функция отправки сообщений
         function sendMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text || !database) return;
+            if (!text) return;
 
-            // Если у пользователя еще нет никнейма, генерируем случайный (например, Зритель_45)
             if (!myUsername) {
                 const enteredName = prompt("Введите ваш ник для чата:", "");
                 myUsername = enteredName ? enteredName.trim().substring(0, 15) : "Зритель_" + Math.floor(Math.random() * 100);
+                localStorage.setItem('chat_user', myUsername);
             }
 
-            // Записываем сообщение в ветку chat_messages базы данных
-            database.ref('chat_messages').push({
-                name: myUsername,
-                text: text,
-                timestamp: Date.now()
-            });
+            const newMsg = { name: myUsername, text: text };
+            
+            // Сохраняем в локальную память
+            const saved = JSON.parse(localStorage.getItem('chat_history') || "[]");
+            saved.push(newMsg);
+            if (saved.length > 50) saved.shift(); // Храним только последние 50
+            localStorage.setItem('chat_history', JSON.stringify(saved));
 
-            input.value = ""; // Очищаем поле ввода
+            // Отправляем в другие вкладки
+            chatChannel.postMessage(newMsg);
+
+            loadMessages();
+            input.value = "";
         }
 
+        // Приём сообщений из соседних вкладок
+        chatChannel.onmessage = function() {
+            loadMessages();
+        };
+
+        // НАДЁЖНОЕ СЛУШАНИЕ НАЖАТИЯ ENTER
+        document.getElementById('chatInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Защита от багов браузера
+                sendMessage();
+            }
+        });
+
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        // Инициализация чата
+        loadMessages();
+
+        // Имитация онлайна для тестов
+        setInterval(() => {
+            const num = Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+            document.getElementById('onlineCount').textContent = num;
+        }, 10000);
+
+        // === ТВ-РАСПИСАНИЕ И ПЛЕЕР ===
+        const playlist = [
+            { id: 'AlR0fQsm83Y', title: 'Смешарики. Начало', duration: 5400 },
+            { id: 'xfFu4P2FZZc', title: 'Смешарики. Легенда о золотом драконе', duration: 4790 },
+            { id: 'dQw4w9WgXcQ', title: 'Смешарики. ДежаВю', duration: 5100 },
+            { id: '1vBgKm9qhhM', title: 'Смешарики снимают кино', duration: 5212 }
+        ];
+        
+        const introId = 'UbY3QIM69Ho';
+        const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
+        let isMuted = true;
+
+        const p1 = "https://www.";
+        const p2 = "youtube";
+        const p3 = ".com/";
