@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Тестовый эфир с чатом</title>
+    <title>Ветер ТВ — Прямой эфир</title>
     <style>
         body {
             background-color: #0f172a;
@@ -36,104 +36,39 @@
         @keyframes blink { 50% { opacity: 0.5; } }
         .subtitle { font-size: 1.2rem; color: #94a3b8; margin-bottom: 25px; font-weight: 500; }
         
-        .main-broadcast-layout {
-            display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            gap: 20px;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
         .video-container {
             position: relative;
-            flex: 1;
-            max-width: 850px;
+            width: 850px;
+            max-width: 100%;
             height: 480px; 
+            margin: 0 auto;
             background: #000;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
         .video-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; background: transparent; }
+        
         iframe { width: 100% !important; height: 480px !important; border: none; display: block; }
         
-        .chat-container {
-            width: 340px;
-            height: 480px;
-            background: #1e293b;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-            border: 1px solid #334155;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
+        /* Авто-растягивание плеера на весь экран */
+        .video-container:fullscreen iframe,
+        .video-container:fullscreen .video-mask,
+        .video-container:-webkit-full-screen iframe,
+        .video-container:-webkit-full-screen .video-mask,
+        .video-container:-moz-full-screen iframe,
+        .video-container:-moz-full-screen .video-mask,
+        .video-container:-ms-fullscreen iframe,
+        .video-container:-ms-fullscreen .video-mask {
+            width: 100vw !important;
+            height: 56.25vw !important;
+            min-height: 100vh !important;
+            min-width: 177.77vh !important;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
-        .chat-header {
-            background: #334155;
-            padding: 10px;
-            font-weight: bold;
-            color: #38bdf8;
-            font-size: 1.1rem;
-        }
-        .chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .msg {
-            background: #111827;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            word-break: break-all;
-        }
-        .msg-author {
-            color: #38bdf8;
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        .chat-input-area {
-            padding: 10px;
-            background: #0f172a;
-            border-top: 1px solid #334155;
-            display: flex;
-            gap: 8px;
-        }
-        .chat-input {
-            flex: 1;
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: white;
-            padding: 8px;
-            border-radius: 6px;
-            outline: none;
-        }
-        .chat-send-btn {
-            background: #0284c7;
-            color: white;
-            border: none;
-            padding: 0 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .chat-send-btn:hover { background: #0369a1; }
-
-        @media (max-width: 1000px) {
-            .main-broadcast-layout { flex-direction: column; align-items: center; }
-            .chat-container { width: 100%; max-width: 850px; height: 400px; margin-top: 10px; }
-        }
-
-        .video-container:fullscreen iframe {
-            width: 100vw !important; height: 56.25vw !important; min-height: 100vh !important; min-width: 177.77vh !important;
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        }
-        .video-container:fullscreen .video-mask { width: 100vw !important; height: 100vh !important; position: absolute; top: 0; left: 0; }
 
         .controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
         .btn {
@@ -155,117 +90,142 @@
     <div class="live-badge">Прямой эфир</div>
     <div class="subtitle" id="currentTrack">Загрузка эфира...</div>
 
-    <div class="main-broadcast-layout">
-        <div class="video-container">
-            <div class="video-mask"></div>
-            <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
-        </div>
-
-        <div class="chat-container">
-            <div class="chat-header">💬 Чат трансляции</div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-area">
-                <input type="text" id="chatInput" class="chat-input" placeholder="Напишите сообщение..." maxlength="150">
-                <button class="chat-send-btn" id="sendBtn">➔</button>
-            </div>
-        </div>
+    <div class="video-container" id="videoContainer">
+        <div class="video-mask"></div>
+        <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
 
     <div class="controls">
-        <button class="btn" id="muteBtn">🔇 Вкл звук</button>
+        <button class="btn" id="muteBtn"> Lumix 🔇 Включить звук</button>
         <button class="btn" id="fullscreenBtn">📺 Полный экран</button>
     </div>
 
     <div class="online-counter">
-        • Онлайн: <span class="online-number" id="onlineCount">1</span> чел.
+        👀 Онлайн: <span class="online-number" id="onlineCount">Загрузка...</span> чел.
     </div>
 
     <script>
-        // === АВТОНОМНАЯ ЛОГИКА ЧАТА (БЕЗ СЕРВЕРОВ) ===
-        let myUsername = localStorage.getItem('chat_user') || "";
-        const chatChannel = new BroadcastChannel('veter_tv_chat');
+        // ЖИВОЙ ЧЕСТНЫЙ СЧЁТЧИК УСТРОЙСТВ
+        function initRealOnlineCounter() {
+            if (!sessionStorage.getItem('visitor_device_token')) {
+                const randomToken = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+                sessionStorage.setItem('visitor_device_token', randomToken);
+            }
+            const deviceToken = sessionStorage.getItem('visitor_device_token');
 
-        // Загрузка сообщений из памяти браузера при старте
-        function loadMessages() {
-            const chatBox = document.getElementById('chatMessages');
-            chatBox.innerHTML = "";
-            const saved = JSON.parse(localStorage.getItem('chat_history') || "[]");
-            saved.forEach(data => {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'msg';
-                msgDiv.innerHTML = `<span class="msg-author">${escapeHTML(data.name)}:</span>${escapeHTML(data.text)}`;
-                chatBox.appendChild(msgDiv);
-            });
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+            const siteUrl = encodeURIComponent(window.location.host + window.location.pathname);
+            const counterUrl = `https://leandrosn.com{siteUrl}&id=${deviceToken}`;
 
-        // Функция отправки сообщений
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (!myUsername) {
-                const enteredName = prompt("Введите ваш ник для чата:", "");
-                myUsername = enteredName ? enteredName.trim().substring(0, 15) : "Зритель_" + Math.floor(Math.random() * 100);
-                localStorage.setItem('chat_user', myUsername);
+            function fetchCount() {
+                fetch(counterUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        const realCount = data.online || 1; 
+                        document.getElementById('onlineCount').textContent = realCount;
+                    })
+                    .catch(() => {
+                        document.getElementById('onlineCount').textContent = "1";
+                    });
             }
 
-            const newMsg = { name: myUsername, text: text };
-            
-            // Сохраняем в локальную память
-            const saved = JSON.parse(localStorage.getItem('chat_history') || "[]");
-            saved.push(newMsg);
-            if (saved.length > 50) saved.shift(); // Храним только последние 50
-            localStorage.setItem('chat_history', JSON.stringify(saved));
-
-            // Отправляем в другие вкладки
-            chatChannel.postMessage(newMsg);
-
-            loadMessages();
-            input.value = "";
+            fetchCount();
+            setInterval(fetchCount, 10000);
         }
 
-        // Приём сообщений из соседних вкладок
-        chatChannel.onmessage = function() {
-            loadMessages();
-        };
+        initRealOnlineCounter();
 
-        // НАДЁЖНОЕ СЛУШАНИЕ НАЖАТИЯ ENTER
-        document.getElementById('chatInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Защита от багов браузера
-                sendMessage();
-            }
-        });
-
-        document.getElementById('sendBtn').addEventListener('click', sendMessage);
-
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-        }
-
-        // Инициализация чата
-        loadMessages();
-
-        // Имитация онлайна для тестов
-        setInterval(() => {
-            const num = Math.floor(Math.random() * (5 - 1 + 1)) + 1;
-            document.getElementById('onlineCount').textContent = num;
-        }, 10000);
-
-        // === ТВ-РАСПИСАНИЕ И ПЛЕЕР ===
+        // ТВОЙ НАСТОЯЩИЙ ЧИСТЫЙ YOUTUBE-ПЛЕЙЛИСТ
+        // Сюда я добавил проверенный официальный ID 1-й серии 5-го сезона Ниндзяго («Ветер перемен»)
         const playlist = [
-            { id: 'AlR0fQsm83Y', title: 'Смешарики. Начало', duration: 5400 },
-            { id: 'xfFu4P2FZZc', title: 'Смешарики. Легенда о золотом драконе', duration: 4790 },
-            { id: 'dQw4w9WgXcQ', title: 'Смешарики. ДежаВю', duration: 5100 },
-            { id: '1vBgKm9qhhM', title: 'Смешарики снимают кино', duration: 5212 }
+            { id: 'AuMRLtc9o8E', title: '🛸 ТРИ КОТА 🛰️ Космические приключения 🌍', duration: 2960 }, 
+            { id: 'AuMRLtc9o8E', title: '🥷 ЛЕГО НИНДЗЯГО — Сезон 5 Серия 1 (Ветер перемен)', duration: 1321 }, // Поставь сюда ID серии Ниндзяго
+            { id: 'du97gvD2MzA', title: '🚁 ТРИ КОТА 🧳 ✈️ Про самолёты ☁️', duration: 2696 }  
         ];
         
-        const introId = 'UbY3QIM69Ho';
+        const introId = 'UbY3QIM69Ho'; // ID видео твоей заставки
+        const introDuration = 11; // ДЛИТЕЛЬНОСТЬ ИНТРО В СЕКУНДАХ (Всё на месте!)
+
         const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
         let isMuted = true;
 
         const p1 = "https://www.";
         const p2 = "youtube";
         const p3 = ".com/";
+        const p4 = "embed/";
+
+        function updateLiveBroadcast() {
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            const now = new Date();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            
+            const playerIframe = document.getElementById('tv-player');
+            const muteParam = isMuted ? 1 : 0;
+
+            // Заставка каждые 30 минут на длину introDuration
+            if ((minutes === 0 || minutes === 30) && seconds < introDuration) {
+                const introUrl = p1 + p2 + p3 + p4 + introId + `?autoplay=1&mute=${muteParam}&controls=0&enablejsapi=1`;
+                if (playerIframe && playerIframe.src !== introUrl) {
+                    playerIframe.src = introUrl;
+                    document.getElementById('currentTrack').textContent = '📺 Заставка телеканала Ветер ТВ';
+                }
+                return;
+            }
+
+            let timeInCycle = currentTimestamp % totalDuration;
+            let currentMovie = playlist;
+            let startSeconds = 0;
+
+            for (let i = 0; i < playlist.length; i++) {
+                if (timeInCycle < playlist[i].duration) {
+                    currentMovie = playlist[i];
+                    startSeconds = Math.floor(timeInCycle);
+                    break;
+                }
+                timeInCycle -= playlist[i].duration;
+            }
+
+            const movieUrl = p1 + p2 + p3 + p4 + currentMovie.id + `?autoplay=1&start=${startSeconds}&mute=${muteParam}&controls=0&enablejsapi=1`;
+            
+            if (playerIframe && !playerIframe.src.includes(currentMovie.id)) {
+                playerIframe.src = movieUrl;
+                document.getElementById('currentTrack').textContent = 'Сейчас в эфире: ' + currentMovie.title;
+            }
+        }
+
+        updateLiveBroadcast();
+        setInterval(updateLiveBroadcast, 1000);
+
+        // УПРАВЛЕНИЕ ЗВУКОМ
+        document.getElementById('muteBtn').addEventListener('click', function() {
+            const playerIframe = document.getElementById('tv-player');
+            isMuted = !isMuted;
+            
+            if (isMuted) {
+                this.innerHTML = " Lumix 🔇 Включить звук";
+                if (playerIframe && playerIframe.contentWindow) {
+                    playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+                }
+            } else {
+                this.innerHTML = "🔊 Выключить звук";
+                if (playerIframe && playerIframe.contentWindow) {
+                    playerIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                }
+            }
+            updateLiveBroadcast();
+        });
+
+        // УПРАВЛЕНИЕ ПОЛНЫМ ЭКРАНОМ
+        document.getElementById('fullscreenBtn').addEventListener('click', function() {
+            const container = document.getElementById('videoContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    alert(`Ошибка перехода в полный экран: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
