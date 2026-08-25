@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Тест АП</title>
+    <title>Ветер ТВ — Тест Безопасности</title>
     <style>
         body {
             background-color: #0f172a;
@@ -12,14 +12,49 @@
             text-align: center;
             padding: 20px;
             margin: 0;
+            min-height: 100vh;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto 20px auto;
+            padding: 0 10px;
         }
         h1 {
-            font-size: 3.5rem;
-            margin-top: 10px;
-            margin-bottom: 5px;
+            font-size: 3rem;
+            margin: 0;
             color: #38bdf8;
             text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
             letter-spacing: 2px;
+        }
+        .auth-widget {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: right;
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .auth-widget p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+        .main-layout {
+            display: flex;
+            max-width: 1150px;
+            margin: 0 auto;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .left-block {
+            flex: 1;
+            max-width: 800px;
         }
         .live-badge {
             background-color: #ef4444;
@@ -34,135 +69,200 @@
             animation: blink 1.5s infinite;
         }
         @keyframes blink { 50% { opacity: 0.5; } }
-        .subtitle { font-size: 1.2rem; color: #94a3b8; margin-bottom: 25px; font-weight: 500; }
+        .subtitle { font-size: 1.2rem; color: #94a3b8; margin-bottom: 15px; font-weight: 500; }
         
         .video-container {
             position: relative;
-            width: 850px;
-            max-width: 100%;
-            height: 480px; 
-            margin: 0 auto;
+            width: 100%;
+            height: 450px; 
             background: #000;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
-        .video-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; background: transparent; }
+        .video-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: transparent; }
         
-        iframe { width: 100% !important; height: 480px !important; border: none; display: block; }
+        iframe { width: 100% !important; height: 450px !important; border: none; display: block; }
         
-        .controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+        .chat-container {
+            width: 320px;
+            height: 520px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .chat-header {
+            background: #0f172a;
+            padding: 10px;
+            font-weight: bold;
+            color: #38bdf8;
+            border-bottom: 1px solid #334155;
+            text-align: left;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .chat-lock-overlay {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            padding: 20px;
+            text-align: center;
+        }
+        .chat-input-area {
+            padding: 10px;
+            border-top: 1px solid #334155;
+            background: #0f172a;
+            display: flex;
+            gap: 5px;
+        }
+        .chat-input {
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            outline: none;
+        }
+        
+        .controls { margin-top: 15px; display: flex; justify-content: center; gap: 15px; }
         .btn {
-            background-color: #0284c7; color: white; border: none; padding: 12px 24px;
-            font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 8px;
-            transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background-color: #0284c7; color: white; border: none; padding: 10px 20px;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: 8px;
+            transition: all 0.2s ease;
         }
-        .btn:hover { background-color: #0369a1; transform: translateY(-1px); }
+        .btn:hover { background-color: #0369a1; }
         .online-counter {
-            margin-top: 35px; font-size: 1.3rem; color: #94a3b8; background: #1e293b;
-            display: inline-block; padding: 8px 20px; border-radius: 20px; border: 1px solid #334155;
+            margin-top: 20px; font-size: 1.1rem; color: #94a3b8; background: #1e293b;
+            display: inline-block; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155;
         }
-        .online-number { color: #22c55e; font-weight: bold; text-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
+        .online-number { color: #22c55e; font-weight: bold; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 16px;
+            padding: 25px;
+            width: 340px;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);
+            text-align: left;
+        }
+        .modal-content h3 { margin: 0 0 15px 0; color: #38bdf8; font-size: 1.3rem; }
+        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.85rem; color: #94a3b8; }
+        .form-group input {
+            background: #0f172a; border: 1px solid #334155; color: white;
+            padding: 8px 12px; border-radius: 6px; outline: none; font-size: 0.95rem;
+        }
+        .modal-btn {
+            background: #22c55e; color: white; border: none; padding: 10px;
+            width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer;
+            margin-top: 10px; font-size: 1rem;
+        }
+        .modal-btn:hover { background: #16a34a; }
+        .close-modal {
+            text-align: center; color: #ef4444; font-size: 0.85rem; margin-top: 10px;
+            cursor: pointer; text-decoration: underline;
+        }
+        .msg-author { font-weight: bold; color: #38bdf8; }
     </style>
+
+    <!-- Скрипты для работы Почты (EmailJS) и Базы данных (Firebase) -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
 <body>
 
-    <h1>Ветер ТВ — Тест</h1>
-    <div class="live-badge">Тестовый эфир</div>
-    <div class="subtitle" id="currentTrack">Загрузка теста...</div>
-
-    <div class="video-container" id="videoContainer">
-        <div class="video-mask"></div>
-        <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <div class="header-container">
+        <h1>Ветер ТВ — Тест</h1>
+        <div class="auth-widget" id="authWidget">
+            <p>Чтобы комментировать эфиры, зарегистрируйся или войди в аккаунт</p>
+            <button class="btn" id="openAuthBtn" style="padding: 6px 12px; font-size: 0.85rem;">Зарегистрироваться/войти</button>
+        </div>
     </div>
 
-    <div class="controls">
-        <button class="btn" id="muteBtn">🔇 Включить звук</button>
-        <button class="btn" id="fullscreenBtn">📺 Полный экран</button>
+    <div class="main-layout">
+        <div class="left-block">
+            <div class="live-badge">Тестовый эфир</div>
+            <div class="subtitle" id="currentTrack">Загрузка эфира...</div>
+
+            <div class="video-container" id="videoContainer">
+                <div class="video-mask"></div>
+                <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="muteBtn">🔇 Включить звук</button>
+                <button class="btn" id="fullscreenBtn">📺 Полный экран</button>
+            </div>
+
+            <div class="online-counter">
+                👀 Онлайн: <span class="online-number" id="onlineCount">Загрузка...</span> чел.
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">💬 ЧАТ ТРАНСЛЯЦИИ</div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-lock-overlay" id="chatLockOverlay">
+                    Зарегистрируйтесь сверху справа, чтобы разблокировать чат и отправлять сообщения.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." disabled>
+                <button class="btn" id="sendMsgBtn" style="padding: 8px 15px;" disabled>➡</button>
+            </div>
+        </div>
     </div>
 
-    <div class="online-counter">
-        👀 Онлайн: <span class="online-number" id="onlineCount">2</span> чел.
-    </div>
+    <!-- ОКНА МОДАЛКИ -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content" id="modalStep1">
+            <h3>Регистрация / Вход</h3>
+            <div class="form-group">
+                <label>Электронная почта:</label>
+                <input type="email" id="authEmail" placeholder="example@mail.ru" required>
+            </div>
+            <div class="form-group">
+                <label>Никнейм в чате:</label>
+                <input type="text" id="authNick" placeholder="Твой Ник" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" id="authPass" placeholder="••••••••" required>
+            </div>
+            <button class="modal-btn" id="nextStepBtn">Получить код на почту</button>
+            <div class="close-modal" id="closeModal1">Отмена</div>
+        </div>
 
-    <script>
-        // Чистый плейлист из твоих двух перезаливов Ниндзяго
-        const playlist = [
-            { id: 'BWVvUc9yl_0', title: '🥷 НИНДЗЯГО — Серия 1 (Перезалив)', duration: 1321 },
-            { id: 'o10B-zfrnSI', title: '🥷 НИНДЗЯГО — Серия 2 (Перезалив)', duration: 1321 }
-        ];
-        const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
-
-        let isMuted = true;
-        let lastLoadedVideoId = ""; 
-
-        const p1 = "https://www.";
-        const p2 = "youtube";
-        const p3 = ".com/";
-        const p4 = "embed/";
-
-        function updateLiveBroadcast() {
-            const currentTimestamp = Math.floor(Date.now() / 1000);
-            const playerIframe = document.getElementById('tv-player');
-            const muteParam = isMuted ? 1 : 0;
-
-            let timeInCycle = currentTimestamp % totalDuration;
-            let currentMovie = null;
-
-            for (let i = 0; i < playlist.length; i++) {
-                if (timeInCycle < playlist[i].duration) {
-                    currentMovie = {
-                        id: playlist[i].id,
-                        title: playlist[i].title,
-                        startFrom: Math.floor(timeInCycle)
-                    };
-                    break;
-                }
-                timeInCycle -= playlist[i].duration;
-            }
-
-            if (currentMovie && playerIframe) {
-                if (lastLoadedVideoId !== currentMovie.id) {
-                    lastLoadedVideoId = currentMovie.id;
-                    playerIframe.src = p1 + p2 + p3 + p4 + currentMovie.id + `?autoplay=1&start=${currentMovie.startFrom}&mute=${muteParam}&controls=0&enablejsapi=1`;
-                    document.getElementById('currentTrack').textContent = 'Сейчас в эфире: ' + currentMovie.title;
-                }
-            }
-        }
-
-        // Запуск проверки
-        updateLiveBroadcast();
-        setInterval(updateLiveBroadcast, 1000);
-
-        // УПРАВЛЕНИЕ ЗВУКОМ
-        document.getElementById('muteBtn').addEventListener('click', function() {
-            const playerIframe = document.getElementById('tv-player');
-            isMuted = !isMuted;
-            
-            if (isMuted) {
-                this.innerHTML = "🔇 Включить звук";
-                if (playerIframe && playerIframe.contentWindow) {
-                    playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
-                }
-            } else {
-                this.innerHTML = "🔊 Выключить звук";
-                if (playerIframe && playerIframe.contentWindow) {
-                    playerIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                }
-            }
-        });
-
-        // УПРАВЛЕНИЕ ПОЛНЫМ ЭКРАНОМ
-        document.getElementById('fullscreenBtn').addEventListener('click', function() {
-            const container = document.getElementById('videoContainer');
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => {
-                    alert(`Ошибка перехода в полный экран: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-        });
-    </script>
-</body>
-</html>
+        <div class="modal-content" id="modalStep2" style="display: none;">
+            <h3>Подтверждение от Ветер ТВ</h3>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0;">На вашу почту отправлен секретный 4-значный код.</p>
+            <div class="form-group">
+                <label>Введи код из письма:</label>
