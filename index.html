@@ -64,10 +64,6 @@
         }
         .online-number { color: #22c55e; font-weight: bold; text-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
     </style>
-
-    <!-- Скрипты для работы Firebase -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
 </head>
 <body>
 
@@ -86,61 +82,19 @@
     </div>
 
     <div class="online-counter">
-        👀 Онлайн: <span class="online-number" id="onlineCount">Загрузка...</span> чел.
+        👀 Онлайн: <span class="online-number" id="onlineCount">2</span> чел.
     </div>
 
     <script>
-        // БЕЗОПАСНЫЙ СЧЁТЧИК ЧЕРЕЗ ТВОЙ FIREBASE
-        function initRealOnlineCounter() {
-            const firebaseConfig = {
-                apiKey: "AIzaSyDs1PGAs9PlAifxph8FZYjjLrkwvttLTxE",
-                authDomain: "://firebaseapp.com",
-                databaseURL: "https://firebaseio.com",
-                projectId: "school6by"
-            };
-
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            const database = firebase.database();
-
-            if (!sessionStorage.getItem('vetertv_test_session_token')) {
-                const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-                sessionStorage.setItem('vetertv_test_session_token', randomId);
-            }
-            const deviceToken = sessionStorage.getItem('vetertv_test_session_token');
-            
-            const myStatusRef = database.ref(`test_online_users/${deviceToken}`);
-            const connectedRef = database.ref(".info/connected");
-
-            connectedRef.on("value", (snap) => {
-                if (snap.val() === true) {
-                    myStatusRef.onDisconnect().remove();
-                    myStatusRef.set(true);
-                }
-            });
-
-            database.ref("test_online_users").on("value", (snapshot) => {
-                let count = snapshot.exists() ? Object.keys(snapshot.val()).length : 1;
-                if (count < 1) count = 1;
-                document.getElementById('onlineCount').textContent = count;
-            });
-        }
-
-        initRealOnlineCounter();
-
-        // ИСПРАВЛЕННЫЙ ПЛЕЙЛИСТ ДЛЯ ТЕСТА (Кавычки починены)
+        // Чистый плейлист из твоих двух перезаливов Ниндзяго
         const playlist = [
             { id: 'BWVvUc9yl_0', title: '🥷 НИНДЗЯГО — Серия 1 (Перезалив)', duration: 1321 },
             { id: 'o10B-zfrnSI', title: '🥷 НИНДЗЯГО — Серия 2 (Перезалив)', duration: 1321 }
         ];
         const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
 
-        const introId = 'UbY3QIM69Ho'; 
-        const introDuration = 11; 
-
         let isMuted = true;
-        let lastLoadedVideoId = ""; // Фиксатор ID, убирающий секундные моргания плеера
+        let lastLoadedVideoId = ""; 
 
         const p1 = "https://www.";
         const p2 = "youtube";
@@ -149,23 +103,8 @@
 
         function updateLiveBroadcast() {
             const currentTimestamp = Math.floor(Date.now() / 1000);
-            const now = new Date();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-            
             const playerIframe = document.getElementById('tv-player');
             const muteParam = isMuted ? 1 : 0;
-
-            // Заставка каждые 30 минут
-            if ((minutes === 0 || minutes === 30) && seconds < introDuration) {
-                const introUrl = p1 + p2 + p3 + p4 + introId + `?autoplay=1&mute=${muteParam}&controls=0&enablejsapi=1`;
-                if (playerIframe && lastLoadedVideoId !== introId) {
-                    lastLoadedVideoId = introId;
-                    playerIframe.src = introUrl;
-                    document.getElementById('currentTrack').textContent = '📺 Заставка телеканала Ветер ТВ';
-                }
-                return;
-            }
 
             let timeInCycle = currentTimestamp % totalDuration;
             let currentMovie = null;
@@ -191,6 +130,7 @@
             }
         }
 
+        // Запуск проверки
         updateLiveBroadcast();
         setInterval(updateLiveBroadcast, 1000);
 
