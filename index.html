@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title ТЕСТ ВЕТЕР</title>
+    <title>Ветер ТВ — Тест АП</title>
     <style>
         body {
             background-color: #0f172a;
@@ -51,25 +51,6 @@
         
         iframe { width: 100% !important; height: 480px !important; border: none; display: block; }
         
-        /* Авто-растягивание плеера на весь экран */
-        .video-container:fullscreen iframe,
-        .video-container:fullscreen .video-mask,
-        .video-container:-webkit-full-screen iframe,
-        .video-container:-webkit-full-screen .video-mask,
-        .video-container:-moz-full-screen iframe,
-        .video-container:-moz-full-screen .video-mask,
-        .video-container:-ms-fullscreen iframe,
-        .video-container:-ms-fullscreen .video-mask {
-            width: 100vw !important;
-            height: 56.25vw !important;
-            min-height: 100vh !important;
-            min-width: 177.77vh !important;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
         .controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
         .btn {
             background-color: #0284c7; color: white; border: none; padding: 12px 24px;
@@ -83,12 +64,16 @@
         }
         .online-number { color: #22c55e; font-weight: bold; text-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
     </style>
+
+    <!-- Скрипты для работы Firebase -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
 <body>
 
-    <h1>Ветер ТВ</h1>
-    <div class="live-badge">Прямой эфир</div>
-    <div class="subtitle" id="currentTrack">Загрузка эфира...</div>
+    <h1>Ветер ТВ — Тест</h1>
+    <div class="live-badge">Тестовый эфир</div>
+    <div class="subtitle" id="currentTrack">Загрузка теста...</div>
 
     <div class="video-container" id="videoContainer">
         <div class="video-mask"></div>
@@ -96,7 +81,7 @@
     </div>
 
     <div class="controls">
-        <button class="btn" id="muteBtn"> Lumix 🔇 Включить звук</button>
+        <button class="btn" id="muteBtn">🔇 Включить звук</button>
         <button class="btn" id="fullscreenBtn">📺 Полный экран</button>
     </div>
 
@@ -105,47 +90,57 @@
     </div>
 
     <script>
-        // ЖИВОЙ ЧЕСТНЫЙ СЧЁТЧИК УСТРОЙСТВ
+        // БЕЗОПАСНЫЙ СЧЁТЧИК ЧЕРЕЗ ТВОЙ FIREBASE
         function initRealOnlineCounter() {
-            if (!sessionStorage.getItem('visitor_device_token')) {
-                const randomToken = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-                sessionStorage.setItem('visitor_device_token', randomToken);
+            const firebaseConfig = {
+                apiKey: "AIzaSyDs1PGAs9PlAifxph8FZYjjLrkwvttLTxE",
+                authDomain: "://firebaseapp.com",
+                databaseURL: "https://firebaseio.com",
+                projectId: "school6by"
+            };
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
             }
-            const deviceToken = sessionStorage.getItem('visitor_device_token');
+            const database = firebase.database();
 
-            const siteUrl = encodeURIComponent(window.location.host + window.location.pathname);
-            const counterUrl = `https://leandrosn.com{siteUrl}&id=${deviceToken}`;
-
-            function fetchCount() {
-                fetch(counterUrl)
-                    .then(res => res.json())
-                    .then(data => {
-                        const realCount = data.online || 1; 
-                        document.getElementById('onlineCount').textContent = realCount;
-                    })
-                    .catch(() => {
-                        document.getElementById('onlineCount').textContent = "1";
-                    });
+            if (!sessionStorage.getItem('vetertv_test_session_token')) {
+                const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                sessionStorage.setItem('vetertv_test_session_token', randomId);
             }
+            const deviceToken = sessionStorage.getItem('vetertv_test_session_token');
+            
+            const myStatusRef = database.ref(`test_online_users/${deviceToken}`);
+            const connectedRef = database.ref(".info/connected");
 
-            fetchCount();
-            setInterval(fetchCount, 10000);
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    myStatusRef.onDisconnect().remove();
+                    myStatusRef.set(true);
+                }
+            });
+
+            database.ref("test_online_users").on("value", (snapshot) => {
+                let count = snapshot.exists() ? Object.keys(snapshot.val()).length : 1;
+                if (count < 1) count = 1;
+                document.getElementById('onlineCount').textContent = count;
+            });
         }
 
         initRealOnlineCounter();
 
-        // ТВОЙ НАСТОЯЩИЙ ЧИСТЫЙ YOUTUBE-ПЛЕЙЛИСТ
-        // Сюда я добавил проверенный официальный ID 1-й серии 5-го сезона Ниндзяго («Ветер перемен»)
+        // ИСПРАВЛЕННЫЙ ПЛЕЙЛИСТ ДЛЯ ТЕСТА (Кавычки починены)
         const playlist = [
-            { id: ''BWVvUc9yl_0', title: '🔍 ТЕСТ НА АВТОРСКИЕ ПРАВА 1', duration: 1321 },
-            { id: ''o10B-zfrnSI', title: '🔍 ТЕСТ НА АВТОРСКИЕ ПРАВА 2', duration: 1321 },
-            
-        ]
-        const introId = 'UbY3QIM69Ho'; // ID видео твоей заставки
-        const introDuration = 11; // ДЛИТЕЛЬНОСТЬ ИНТРО В СЕКУНДАХ (Всё на месте!)
-
+            { id: 'BWVvUc9yl_0', title: '🥷 НИНДЗЯГО — Серия 1 (Перезалив)', duration: 1321 },
+            { id: 'o10B-zfrnSI', title: '🥷 НИНДЗЯГО — Серия 2 (Перезалив)', duration: 1321 }
+        ];
         const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
+
+        const introId = 'UbY3QIM69Ho'; 
+        const introDuration = 11; 
+
         let isMuted = true;
+        let lastLoadedVideoId = ""; // Фиксатор ID, убирающий секундные моргания плеера
 
         const p1 = "https://www.";
         const p2 = "youtube";
@@ -161,10 +156,11 @@
             const playerIframe = document.getElementById('tv-player');
             const muteParam = isMuted ? 1 : 0;
 
-            // Заставка каждые 30 минут на длину introDuration
+            // Заставка каждые 30 минут
             if ((minutes === 0 || minutes === 30) && seconds < introDuration) {
                 const introUrl = p1 + p2 + p3 + p4 + introId + `?autoplay=1&mute=${muteParam}&controls=0&enablejsapi=1`;
-                if (playerIframe && playerIframe.src !== introUrl) {
+                if (playerIframe && lastLoadedVideoId !== introId) {
+                    lastLoadedVideoId = introId;
                     playerIframe.src = introUrl;
                     document.getElementById('currentTrack').textContent = '📺 Заставка телеканала Ветер ТВ';
                 }
@@ -172,23 +168,26 @@
             }
 
             let timeInCycle = currentTimestamp % totalDuration;
-            let currentMovie = playlist;
-            let startSeconds = 0;
+            let currentMovie = null;
 
             for (let i = 0; i < playlist.length; i++) {
                 if (timeInCycle < playlist[i].duration) {
-                    currentMovie = playlist[i];
-                    startSeconds = Math.floor(timeInCycle);
+                    currentMovie = {
+                        id: playlist[i].id,
+                        title: playlist[i].title,
+                        startFrom: Math.floor(timeInCycle)
+                    };
                     break;
                 }
                 timeInCycle -= playlist[i].duration;
             }
 
-            const movieUrl = p1 + p2 + p3 + p4 + currentMovie.id + `?autoplay=1&start=${startSeconds}&mute=${muteParam}&controls=0&enablejsapi=1`;
-            
-            if (playerIframe && !playerIframe.src.includes(currentMovie.id)) {
-                playerIframe.src = movieUrl;
-                document.getElementById('currentTrack').textContent = 'Сейчас в эфире: ' + currentMovie.title;
+            if (currentMovie && playerIframe) {
+                if (lastLoadedVideoId !== currentMovie.id) {
+                    lastLoadedVideoId = currentMovie.id;
+                    playerIframe.src = p1 + p2 + p3 + p4 + currentMovie.id + `?autoplay=1&start=${currentMovie.startFrom}&mute=${muteParam}&controls=0&enablejsapi=1`;
+                    document.getElementById('currentTrack').textContent = 'Сейчас в эфире: ' + currentMovie.title;
+                }
             }
         }
 
@@ -201,7 +200,7 @@
             isMuted = !isMuted;
             
             if (isMuted) {
-                this.innerHTML = " Lumix 🔇 Включить звук";
+                this.innerHTML = "🔇 Включить звук";
                 if (playerIframe && playerIframe.contentWindow) {
                     playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
                 }
@@ -211,7 +210,6 @@
                     playerIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
                 }
             }
-            updateLiveBroadcast();
         });
 
         // УПРАВЛЕНИЕ ПОЛНЫМ ЭКРАНОМ
