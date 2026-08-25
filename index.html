@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Прямой эфир</title>
+    <title ТЕСТ ВЕТЕР</title>
     <style>
         body {
             background-color: #0f172a;
@@ -137,11 +137,10 @@
         // ТВОЙ НАСТОЯЩИЙ ЧИСТЫЙ YOUTUBE-ПЛЕЙЛИСТ
         // Сюда я добавил проверенный официальный ID 1-й серии 5-го сезона Ниндзяго («Ветер перемен»)
         const playlist = [
-            { id: 'AuMRLtc9o8E', title: '🛸 ТРИ КОТА 🛰️ Космические приключения 🌍', duration: 2960 }, 
-            { id: 'AuMRLtc9o8E', title: '🥷 ЛЕГО НИНДЗЯГО — Сезон 5 Серия 1 (Ветер перемен)', duration: 1321 }, // Поставь сюда ID серии Ниндзяго
-            { id: 'du97gvD2MzA', title: '🚁 ТРИ КОТА 🧳 ✈️ Про самолёты ☁️', duration: 2696 }  
-        ];
-        
+            { id: ''BWVvUc9yl_0', title: '🔍 ТЕСТ НА АВТОРСКИЕ ПРАВА 1', duration: 1321 },
+            { id: ''o10B-zfrnSI', title: '🔍 ТЕСТ НА АВТОРСКИЕ ПРАВА 2', duration: 1321 },
+            
+        ]
         const introId = 'UbY3QIM69Ho'; // ID видео твоей заставки
         const introDuration = 11; // ДЛИТЕЛЬНОСТЬ ИНТРО В СЕКУНДАХ (Всё на месте!)
 
@@ -202,7 +201,7 @@
             isMuted = !isMuted;
             
             if (isMuted) {
-                this.innerHTML = " 🔇 Включить звук";
+                this.innerHTML = " Lumix 🔇 Включить звук";
                 if (playerIframe && playerIframe.contentWindow) {
                     playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
                 }
