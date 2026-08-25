@@ -3,246 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Тест Безопасности</title>
+    <title>Ветер ТВ — Тест</title>
     <style>
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
+        body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; padding: 20px; }
+        .main-layout { display: flex; max-width: 1400px; margin: 0 auto; gap: 20px; justify-content: center; }
+        .left-auth-column { width: 300px; }
+        .center-player-column { flex: 1; max-width: 750px; }
+        .right-chat-column { width: 300px; }
+        .auth-panel, .account-status, .chat-container { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 12px; text-align: left; }
+        .video-container { width: 100%; height: 430px; background: #000; border-radius: 12px; overflow: hidden; }
+        iframe { width: 100% !important; height: 430px !important; border: none; }
+        .form-vertical { display: flex; flex-direction: column; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group input { background: #0f172a; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; outline: none; }
+        .submit-btn, .btn { background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+        .submit-btn { background: #22c55e; }
+        .chat-container { height: 500px; display: flex; flex-direction: column; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 5px; font-size: 0.9rem; }
+        .chat-lock-overlay { color: #94a3b8; text-align: center; padding-top: 50px; }
+        .chat-input-area { display: flex; gap: 5px; margin-top: 10px; }
+        .chat-input { flex: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; }
+        @media (max-width: 1000px) {
+            .main-layout { flex-direction: column; align-items: center; }
+            .left-auth-column, .center-player-column, .right-chat-column { width: 100%; max-width: 100%; }
+            .center-player-column { order: 1; }
+            .left-auth-column { order: 2; }
+            .right-chat-column { order: 3; }
         }
-        h1 {
-            font-size: 3rem;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            color: #38bdf8;
-            text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-            letter-spacing: 2px;
-        }
-        .main-layout {
-            display: flex;
-            max-width: 1150px;
-            margin: 0 auto;
-            gap: 24px;
-            justify-content: center;
-            align-items: flex-start;
-        }
-        .left-block {
-            flex: 1;
-            max-width: 780px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .live-badge {
-            background-color: #ef4444;
-            color: white;
-            padding: 4px 10px;
-            font-weight: bold;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            display: inline-block;
-            align-self: center;
-            text-transform: uppercase;
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        .subtitle { font-size: 1.2rem; color: #94a3b8; font-weight: 500; margin: 0; }
-        
-        .video-container {
-            position: relative;
-            width: 100%;
-            height: 440px; 
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        }
-        .video-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: transparent; }
-        iframe { width: 100% !important; height: 440px !important; border: none; display: block; }
-        
-        .controls { display: flex; justify-content: center; gap: 15px; }
-        .btn {
-            background-color: #0284c7; color: white; border: none; padding: 10px 20px;
-            font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        .btn:hover { background-color: #0369a1; }
-        
-        /* НОВЫЙ БЛОК РЕГИСТРАЦИИ ПОД ПЛЕЕРОМ */
-        .auth-panel {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: left;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .auth-panel h3 { margin: 0 0 15px 0; color: #38bdf8; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 8px; }
-        .auth-panel p { font-size: 0.9rem; color: #94a3b8; margin: 0 0 15px 0; }
-        .form-inline {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
-        }
-        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
-        .form-group label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
-        .form-group input {
-            background: #0f172a; border: 1px solid #334155; color: white;
-            padding: 8px 12px; border-radius: 6px; outline: none; font-size: 0.9rem;
-        }
-        .submit-btn {
-            background: #22c55e; color: white; border: none; padding: 9px 18px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem;
-            transition: background 0.2s; height: 36px;
-        }
-        .submit-btn:hover { background: #16a34a; }
-
-        /* БЛОК АККАУНТА КОГДА ВОШЕЛ */
-        .account-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1e293b;
-            border: 1px solid #22c55e;
-            padding: 12px 20px;
-            border-radius: 12px;
-            text-align: left;
-        }
-        
-        /* Правый блок — Чат */
-        .chat-container {
-            width: 330px;
-            height: 560px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        }
-        .chat-header {
-            background: #0f172a;
-            padding: 12px;
-            font-weight: bold;
-            color: #38bdf8;
-            border-bottom: 1px solid #334155;
-            text-align: left;
-        }
-        .chat-messages {
-            flex: 1;
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            text-align: left;
-            font-size: 0.9rem;
-        }
-        .chat-lock-overlay {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(15, 23, 42, 0.6);
-            color: #94a3b8;
-            font-size: 0.9rem;
-            padding: 25px;
-            text-align: center;
-            line-height: 1.4;
-        }
-        .chat-input-area {
-            padding: 12px;
-            border-top: 1px solid #334155;
-            background: #0f172a;
-            display: flex;
-            gap: 6px;
-        }
-        .chat-input {
-            flex: 1;
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            outline: none;
-        }
-        .online-counter {
-            margin-top: 5px; font-size: 1.1rem; color: #94a3b8; background: #1e293b;
-            display: inline-block; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155;
-            align-self: center;
-        }
-        .online-number { color: #22c55e; font-weight: bold; }
-        .msg-author { font-weight: bold; color: #38bdf8; }
     </style>
-
-    <!-- Скрипты EmailJS и Firebase -->
     <script src="https://jsdelivr.net"></script>
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
 </head>
 <body>
 
-    <h1>Ветер ТВ — Тест</h1>
+    <h1 style="text-align:center; color:#38bdf8;">Ветер ТВ — Тест</h1>
 
     <div class="main-layout">
-        <!-- ЛЕВАЯ КОЛОНКА: ПЛЕЕР, КНОПКИ, РЕГИСТРАЦИЯ -->
-        <div class="left-block">
-            <div class="live-badge">Тестовый эфир</div>
-            <div class="subtitle" id="currentTrack">Загрузка эфира...</div>
-
-            <div class="video-container" id="videoContainer">
-                <div class="video-mask"></div>
-                <iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe>
-            </div>
-
-            <div class="controls">
-                <button class="btn" id="muteBtn">🔇 Включить звук</button>
-                <button class="btn" id="fullscreenBtn">📺 Полный экран</button>
-            </div>
-
-            <!-- ИНТЕРФЕЙС АВТОРИЗАЦИИ СТРОГО НА УРОВНЕ ПЛЕЕРА -->
+        <div class="left-auth-column">
             <div id="authContainer">
-                <!-- ШАГ 1: Форма ввода данных (показывается по умолчанию) -->
                 <div class="auth-panel" id="authStep1Panel">
-                    <h3>🔐 Авторизация телеканала Ветер ТВ</h3>
-                    <p>Чтобы комментировать эфиры, зарегистрируйтесь или войдите в свой аккаунт:</p>
-                    <div class="form-inline">
-                        <div class="form-group">
-                            <label>Почта:</label>
-                            <input type="email" id="authEmail" placeholder="example@mail.ru" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Никнейм:</label>
-                            <input type="text" id="authNick" placeholder="Твой ник в чате" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Пароль:</label>
-                            <input type="password" id="authPass" placeholder="••••••••" required>
-                        </div>
-                        <button class="submit-btn" id="nextStepBtn">Получить код</button>
+                    <h3>🔐 Авторизация аккаунта</h3>
+                    <div class="form-vertical">
+                        <div class="form-group"><label>Почта:</label><input type="email" id="authEmail" placeholder="example@mail.ru" required></div>
+                        <div class="form-group"><label>Никнейм в чате:</label><input type="text" id="authNick" placeholder="Твой ник" required></div>
+                        <div class="form-group"><label>Пароль:</label><input type="password" id="authPass" placeholder="••••••••" required></div>
+                        <button class="submit-btn" id="nextStepBtn">Зарегистрироваться/войти</button>
                     </div>
                 </div>
-
-                <!-- ШАГ 2: Ввод секретного кода (скрыт по умолчанию) -->
                 <div class="auth-panel" id="authStep2Panel" style="display: none;">
-                    <h3>📧 Подтверждение безопасности</h3>
-                    <p>На указанную почту отправлен секретный 4-значный код от Ветер ТВ. Введите его для защиты профиля:</p>
-                    <div class="form-inline" style="justify-content: flex-start; gap: 15px;">
-                        <div class="form-group" style="flex: 0 0 150px;">
-                            <label>Код из письма:</label>
-                            <input type="text" id="authCode" placeholder="0000" maxlength="4" style="text-align: center; font-weight: bold; letter-spacing: 3px;">
-                        </div>
-                        <button class="submit-btn" id="confirmCodeBtn" style="background: #38bdf8;">Войти в аккаунт</button>
-                        <button class="btn" id="backToStep1" style="background: #475569; padding: 8px 15px; font-size: 0.9rem; border-radius: 6px;">Назад</button>
+                    <h3>📧 Подтверждение от Ветер ТВ</h3>
+                    <p style="font-size:0.8rem; color:#94a3b8;">На вашу почту отправлен секретный 4-значный код.</p>
+                    <div class="form-vertical">
+                        <div class="form-group"><label>Код подтверждения:</label><input type="text" id="authCode" placeholder="0000" maxlength="4" style="text-align: center; font-weight: bold; font-size: 1.2rem;"></div>
+                        <button class="submit-btn" id="confirmCodeBtn" style="background: #38bdf8;">Подтвердить код</button>
+                        <button class="btn" id="backToStep1" style="background: #475569;">Назад</button>
                     </div>
                 </div>
-
-                <!-- ШАГ 3: Статус успешного входа -->
                 <div class="account-status" id="authSuccessPanel" style="display: none;">
-                    <div>
+                    <span style="color: #22c55e; font-weight: bold;">✓ Вы вошли в аккаунт</span>
+                    <p>Пользователь: <span id="lblActiveNick" style="font-weight: bold;"></span></p>
+                    <button class="btn" onclick="logoutUser()" style="background: #ef4444;">Выйти</button>
+                </div>
+            </div>
+         </div>   
+        <div class="center-player-column">
+            <p id="currentTrack" style="text-align:center; color:#94a3b8;">Синхронизация эфира...</p>
+            <div class="video-container"><iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
+            <div style="display:flex; gap:10px; margin-top:10px;"><button class="btn" id="muteBtn">🔇 Включить звук</button></div>
+            <p style="color:#94a3b8;">👀 Онлайн на сайте: <span id="onlineCount" style="color:#22c55e; font-weight:bold;">1</span> чел.</p>
+        </div>
+
+        <div class="right-chat-column">
+            <div class="chat-container">
+                <h3 style="margin:0 0 10px 0; color:#38bdf8;">💬 ЧАТ ТРАНСЛЯЦИИ</h3>
+                <div class="chat-messages" id="chatMessages"><div class="chat-lock-overlay" id="chatLockOverlay">Зарегистрируйтесь слева, чтобы открыть чат.</div></div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Сообщение..." disabled>
+                    <button class="btn" id="sendMsgBtn" style="width:auto; padding:0 15px;" disabled>➡</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Сюда можно будет вписать свои ключи после настройки EmailJS
+        const EMAILJS_PUBLIC_KEY = "ВСТАВЬ_PUBLIC_KEY";
+        const EMAILJS_SERVICE_ID = "ВСТАВЬ_SERVICE_ID";
+        const EMAILJS_TEMPLATE_ID = "ВСТАВЬ_TEMPLATE_ID";
+
+        if(EMAILJS_PUBLIC_KEY !== "ВСТАВЬ_PUBLIC_KEY") { emailjs.init(EMAILJS_PUBLIC_KEY); }
+
+        let generatedCode = ""; let tempNickname = ""; let currentClientIP = "";
+
+        // Узнаем IP (Правило №2)
+        async function fetchUserIP() {
+            try {
+                let response = await fetch('https://ipify.org');
+                let data = await response.json();
+                currentClientIP = data.ip;
+                checkSecurityPolicies();
+            } catch (e) { currentClientIP = "127.0.0.1"; checkSecurityPolicies(); }
+        }
+
+        // Проверка 72 часов и IP (Правило №1 и №2)
+        function checkSecurityPolicies() {
+            const savedNick = localStorage.getItem('vetertv_nickname');
+            const savedTime = localStorage.getItem('vetertv_auth_time');
+            const savedIP = localStorage.getItem('vetertv_auth_ip');
+
+            if (savedNick && savedTime && savedIP) {
+                if ((Date.now() - parseInt(savedTime)) / (1000 * 60 * 60) >= 72) {
+                    logoutUser("Время сессии истекло (72 ч)."); return;
+                }
+                if (savedIP !== currentClientIP) {
+                    logoutUser("Смена IP-адреса! Безопасность профиля."); return;
+                }
+                activateAuthorizedUI(savedNick);
+            }
+        }
+
+        function logoutUser(reason) {
+            if(reason) alert(reason);
+            localStorage.removeItem('vetertv_nickname');
+            localStorage.removeItem('vetertv_auth_time');
+            localStorage.removeItem('vetertv_auth_ip');
+            location.reload();
+        }
+
+        function activateAuthorizedUI(nickname) {
+            document.getElementById('authStep1Panel').style.display = 'none';
+            document.getElementById('authStep2Panel').style.display = 'none';
+            document.getElementById('authSuccessPanel').style.display = 'block';
+            document.getElementById('lblActiveNick').textContent = nickname;
+            const lock = document.getElementById('chatLockOverlay'); if (lock) lock.remove();
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('sendMsgBtn').disabled = false;
+            loadLocalChat();
+        }
+
+        // Честный автономный онлайн вкладок по Wi-Fi
+        function initAutonomousOnline() {
+            const channel = new BroadcastChannel('vetertv_pure_tab_bus');
+            const myTabId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+            let activeTabs = {}; activeTabs[myTabId] = Date.now();
+
+            channel.onmessage = (event) => {
+                if (event.data.type === 'ping' || event.data.type === 'pong') { activeTabs[event.data.id] = Date.now(); updateUI(); }
+                else if (event.data.type === 'disconnect') { delete activeTabs[event.data.id]; updateUI(); }
+            };
+            function sendPing() { channel.postMessage({ type: 'ping', id: myTabId }); }
+            function updateUI() {
+                const now = Date.now(); for (let id in activeTabs) { if (now - activeTabs[id] > 5000) delete activeTabs[id]; }
+                const totalCount = Object.keys(activeTabs).length;
+                document.getElementById('onlineCount').textContent = totalCount < 1 ? 1 : totalCount;
+            }
+            window.addEventListener('beforeunload', () => { channel.postMessage({ type: 'disconnect', id: myTabId }); });
+            setInterval(() => { sendPing(); updateUI(); }, 2000);
+            sendPing(); updateUI();
+        }
+
+        // Твой плейлист перезаливов Ниндзяго
+        const playlist = [
+            { id: 'BWVvUc9yl_0', title: '🥷 НИНДЗЯГО — Сезон 5 Серия 1 (Ветер перемен)', duration: 1321 },
+            { id: 'o10B-zfrnSI', title: '🥷 НИНДЗЯГО — Сезон 5 Серия 2 (Второе видео)', duration: 1321 }
+        ];
+        const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
+        let isMuted = true; let lastLoadedVideoId = ""; 
+
+        function updateLiveBroadcast() {
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            const playerIframe = document.getElementById('tv-player');
+            let timeInCycle = currentTimestamp % totalDuration; let currentMovie = null;
+
+            for (let i = 0; i < playlist.length; i++) {
+                if (timeInCycle < playlist[i].duration) {
+                    currentMovie = { id: playlist[i].id, title: playlist[i].title, startFrom: Math.floor(timeInCycle) }; break;
+                }
+                timeInCycle -= playlist[i].duration;
+            }
+            if (currentMovie && playerIframe) {
+                if (lastLoadedVideoId !== currentMovie.id) {
+                    lastLoadedVideoId = currentMovie.id;
+                    playerIframe.src = `https://youtube.com{currentMovie.id}?autoplay=1&start=${currentMovie.startFrom}&mute=${isMuted?1:0}&controls=0&enablejsapi=1`;
+                    document.getElementById('currentTrack').textContent = 'В эфире: ' + currentMovie.title;
+                }
+            }
+        }
+
+        fetchUserIP(); initAutonomousOnline(); updateLiveBroadcast(); setInterval(updateLiveBroadcast, 1000);
+
+        // Отправка кода из письма (EmailJS)
+        document.getElementById('nextStepBtn').addEventListener('click', function() {
+            const email = document.getElementById('authEmail').value;
+            const nick = document.getElementById('authNick').value;
+            const pass = document.getElementById('authPass').value;
+
+            if (email && nick && pass) {
+                tempNickname = nick; generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
+                if(EMAILJS_PUBLIC_KEY === "ВСТАВЬ_PUBLIC_KEY") {
+                    alert(`[ТЕСТ ИЗ ПИСЬМА ВЕТЕР ТВ]: Секретный код: ${generatedCode}`);
+                    document.getElementById('authStep1Panel').style.display = 'none';
+                    document.getElementById('authStep2Panel').style.display = 'block';
+                } else {
+                    this.innerText = "Отправка..."; this.disabled = true;
+                    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, username: nick, code: generatedCode })
+                        .then(() => { document.getElementById('authStep1Panel').style.display = 'none'; document.getElementById('authStep2Panel').style.display = 'block'; })
+                        .catch(() => { alert("Ошибка EmailJS!"); })
+                        .finally(() => { this.innerText = "Зарегистрироваться/войти"; this.disabled = false; });
+                }
+            } else { alert("Заполните все три поля!"); }
+        });
+
+        // Сверка кода
+        document.getElementById('confirmCodeBtn').addEventListener('click', () => {
+            if (document.getElementById('authCode').value === generatedCode) {
+                localStorage.setItem('vetertv_nickname', tempNickname);
+                localStorage.setItem('vetertv_auth_time', Date.now().toString());
+                localStorage.setItem('vetertv_auth_ip', currentClientIP);
+                activateAuthorizedUI(tempNickname);
+            } else { alert("Неверный код от Ветер ТВ!"); }
+        });
+        document.getElementById('backToStep1').addEventListener('click', () => { document.getElementById('authStep2Panel').style.display = 'none'; document.getElementById('authStep1Panel').style.display = 'block'; });
+
+        // ЧАТ LOCALSTORAGE
+        function loadLocalChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            let messages = JSON.parse(localStorage.getItem('vetertv_chat_history')) || [];
+            chatMessages.innerHTML = "";
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div'); msgDiv.innerHTML = `<b>${msg.name}:</b> ${msg.text}`; chatMessages.appendChild(msgDiv);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        function sendMessage() {
+            const input = document.getElementById('chatInput'); const text = input.value.trim(); const nickname = localStorage.getItem('vetertv_nickname');
+            if (text && nickname) {
+                let messages = JSON.parse(localStorage.getItem('vetertv_chat_history')) || []; messages.push({ name: nickname, text: text });
+                localStorage.setItem('vetertv_chat_history', JSON.stringify(messages)); loadLocalChat(); input.value = "";
+                new BroadcastChannel('vetertv_pure_tab_bus').postMessage({ type: 'new_msg' });
+            }
+        }
+        new BroadcastChannel('vetertv_pure_tab_bus').onmessage = (e) => { if(e.data.type === 'new_msg') loadLocalChat(); };
+        document.getElementById('sendMsgBtn').addEventListener('click', sendMessage);
+        document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        // КНОПКА ЗВУКА
+        document.getElementById('muteBtn').addEventListener('click', function() {
+            const playerIframe = document.getElementById('tv-player'); isMuted = !isMuted;
+            this.innerHTML = isMuted ? "🔇 Включить звук" : "🔊 Выключить звук";
+            if (playerIframe && playerIframe.contentWindow) {
+                playerIframe.contentWindow.postMessage(`{"event":"command","func":"${isMuted?'mute':'unMute'}","args":""}`, '*');
+            }
+        });
+    </script>
+</body>
+</html>
