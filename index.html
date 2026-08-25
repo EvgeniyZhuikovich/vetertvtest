@@ -202,7 +202,7 @@
             isMuted = !isMuted;
             
             if (isMuted) {
-                this.innerHTML = " Lumix 🔇 Включить звук";
+                this.innerHTML = " 🔇 Включить звук";
                 if (playerIframe && playerIframe.contentWindow) {
                     playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
                 }
