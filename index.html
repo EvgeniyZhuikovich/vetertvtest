@@ -23,14 +23,16 @@
         .chat-lock-overlay { color: #94a3b8; text-align: center; padding-top: 50px; }
         .chat-input-area { display: flex; gap: 5px; margin-top: 10px; }
         .chat-input { flex: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; }
-        @media (max-width: 1000px) {
+        @media (max-width: 1100px) {
             .main-layout { flex-direction: column; align-items: center; }
             .left-auth-column, .center-player-column, .right-chat-column { width: 100%; max-width: 100%; }
             .center-player-column { order: 1; }
             .left-auth-column { order: 2; }
             .right-chat-column { order: 3; }
+            .video-container, iframe { height: 240px !important; }
         }
     </style>
+    <!-- Официальный скрипт для мгновенной отправки писем EmailJS -->
     <script src="https://jsdelivr.net"></script>
 </head>
 <body>
@@ -38,8 +40,11 @@
     <h1 style="text-align:center; color:#38bdf8;">Ветер ТВ — Тест</h1>
 
     <div class="main-layout">
+        
+        <!-- ЛЕВАЯ СТОРОНА НА ПК: РЕГИСТРАЦИЯ -->
         <div class="left-auth-column">
             <div id="authContainer">
+                <!-- ШАГ 1: Ввод почты и ника -->
                 <div class="auth-panel" id="authStep1Panel">
                     <h3>🔐 Авторизация аккаунта</h3>
                     <div class="form-vertical">
@@ -49,6 +54,8 @@
                         <button class="submit-btn" id="nextStepBtn">Зарегистрироваться/войти</button>
                     </div>
                 </div>
+
+                <!-- ШАГ 2: Ввод секретного кода -->
                 <div class="auth-panel" id="authStep2Panel" style="display: none;">
                     <h3>📧 Подтверждение от Ветер ТВ</h3>
                     <p style="font-size:0.8rem; color:#94a3b8;">На вашу почту отправлен секретный 4-значный код.</p>
@@ -58,20 +65,25 @@
                         <button class="btn" id="backToStep1" style="background: #475569;">Назад</button>
                     </div>
                 </div>
+
+                <!-- ШАГ 3: Успешная авторизация -->
                 <div class="account-status" id="authSuccessPanel" style="display: none;">
                     <span style="color: #22c55e; font-weight: bold;">✓ Вы вошли в аккаунт</span>
                     <p>Пользователь: <span id="lblActiveNick" style="font-weight: bold;"></span></p>
-                    <button class="btn" onclick="logoutUser()" style="background: #ef4444;">Выйти</button>
+                    <button class="btn" onclick="logoutUser()" style="background: #ef4444;">Выйти из профиля</button>
                 </div>
             </div>
-         </div>   
+        </div>
+
+        <!-- ЦЕНТРАЛЬНАЯ СТОРОНА НА ПК: ТВОЙ ПЛЕЕР -->
         <div class="center-player-column">
-            <p id="currentTrack" style="text-align:center; color:#94a3b8;">Синхронизация эфира...</p>
+            <p id="currentTrack" style="text-align:center; color:#94a3b8; font-weight: bold;">Синхронизация эфира...</p>
             <div class="video-container"><iframe id="tv-player" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
             <div style="display:flex; gap:10px; margin-top:10px;"><button class="btn" id="muteBtn">🔇 Включить звук</button></div>
             <p style="color:#94a3b8;">👀 Онлайн на сайте: <span id="onlineCount" style="color:#22c55e; font-weight:bold;">1</span> чел.</p>
         </div>
 
+        <!-- ПРАВАЯ СТОРОНА НА ПК: ЧАТ ТРАНСЛЯЦИИ -->
         <div class="right-chat-column">
             <div class="chat-container">
                 <h3 style="margin:0 0 10px 0; color:#38bdf8;">💬 ЧАТ ТРАНСЛЯЦИИ</h3>
@@ -84,37 +96,35 @@
         </div>
     </div>
     <script>
-        // Сюда можно будет вписать свои ключи после настройки EmailJS
-        const EMAILJS_PUBLIC_KEY = "ВСТАВЬ_PUBLIC_KEY";
-        const EMAILJS_SERVICE_ID = "ВСТАВЬ_SERVICE_ID";
-        const EMAILJS_TEMPLATE_ID = "ВСТАВЬ_TEMPLATE_ID";
+        // ЛИЧНЫЕ КЛЮЧИ EMAILJS СИСТЕМЫ ВЕТЕР ТВ
+        const EMAILJS_PUBLIC_KEY = "xrlQMiO5gTxbKJfVL";
+        const EMAILJS_SERVICE_ID = "vetertv"; 
+        const EMAILJS_TEMPLATE_ID = "template_hm6ccho";
 
-        if(EMAILJS_PUBLIC_KEY !== "ВСТАВЬ_PUBLIC_KEY") { emailjs.init(EMAILJS_PUBLIC_KEY); }
+        emailjs.init(EMAILJS_PUBLIC_KEY);
 
-        let generatedCode = ""; let tempNickname = ""; let currentClientIP = "";
+        let generatedCode = ""; 
+        let tempNickname = "";
+        let isMuted = true; 
+        let lastLoadedVideoId = ""; 
 
-        // Узнаем IP (Правило №2)
-        async function fetchUserIP() {
-            try {
-                let response = await fetch('https://ipify.org');
-                let data = await response.json();
-                currentClientIP = data.ip;
-                checkSecurityPolicies();
-            } catch (e) { currentClientIP = "127.0.0.1"; checkSecurityPolicies(); }
-        }
-
-        // Проверка 72 часов и IP (Правило №1 и №2)
+        // МГНОВЕННАЯ УЛЬТРА-БЫСТРАЯ ПРОВЕРКА БЕЗОПАСНОСТИ (Без лагов и внешних запросов)
         function checkSecurityPolicies() {
             const savedNick = localStorage.getItem('vetertv_nickname');
             const savedTime = localStorage.getItem('vetertv_auth_time');
-            const savedIP = localStorage.getItem('vetertv_auth_ip');
+            const savedToken = localStorage.getItem('vetertv_auth_device_token');
+            const currentToken = sessionStorage.getItem('vetertv_device_unique_session');
 
-            if (savedNick && savedTime && savedIP) {
+            if (savedNick && savedTime && savedToken) {
+                // 1. Контроль времени сессии (Лимит 72 часа)
                 if ((Date.now() - parseInt(savedTime)) / (1000 * 60 * 60) >= 72) {
-                    logoutUser("Время сессии истекло (72 ч)."); return;
+                    logoutUser("Время вашей сессии истекло (72 ч). Перевойдите."); 
+                    return;
                 }
-                if (savedIP !== currentClientIP) {
-                    logoutUser("Смена IP-адреса! Безопасность профиля."); return;
+                // 2. Локальная защита аккаунта от подмены куки
+                if (savedToken !== currentToken && currentToken) {
+                    logoutUser("Сессия безопасности обновлена. Пожалуйста, авторизуйтесь заново."); 
+                    return;
                 }
                 activateAuthorizedUI(savedNick);
             }
@@ -124,7 +134,7 @@
             if(reason) alert(reason);
             localStorage.removeItem('vetertv_nickname');
             localStorage.removeItem('vetertv_auth_time');
-            localStorage.removeItem('vetertv_auth_ip');
+            localStorage.removeItem('vetertv_auth_device_token');
             location.reload();
         }
 
@@ -139,104 +149,109 @@
             loadLocalChat();
         }
 
-        // Честный автономный онлайн вкладок по Wi-Fi
+        // АВТОНОМНЫЙ ОНЛАЙН СЧЁТЧИК — РАБОТАЕТ МГНОВЕННО БЕЗ СЕРВЕРОВ
         function initAutonomousOnline() {
+            if (!sessionStorage.getItem('vetertv_device_unique_session')) {
+                sessionStorage.setItem('vetertv_device_unique_session', Math.random().toString(36).substring(2) + Date.now().toString(36));
+            }
+            const myTabId = sessionStorage.getItem('vetertv_device_unique_session');
             const channel = new BroadcastChannel('vetertv_pure_tab_bus');
-            const myTabId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-            let activeTabs = {}; activeTabs[myTabId] = Date.now();
+            let activeTabs = {}; 
+            activeTabs[myTabId] = Date.now();
 
-            channel.onmessage = (event) => {
-                if (event.data.type === 'ping' || event.data.type === 'pong') { activeTabs[event.data.id] = Date.now(); updateUI(); }
-                else if (event.data.type === 'disconnect') { delete activeTabs[event.data.id]; updateUI(); }
+            channel.onmessage = (e) => {
+                if (e.data.type === 'ping' || e.data.type === 'pong') { activeTabs[e.data.id] = Date.now(); updateUI(); }
+                else if (e.data.type === 'disconnect') { delete activeTabs[e.data.id]; updateUI(); }
             };
-            function sendPing() { channel.postMessage({ type: 'ping', id: myTabId }); }
             function updateUI() {
                 const now = Date.now(); for (let id in activeTabs) { if (now - activeTabs[id] > 5000) delete activeTabs[id]; }
-                const totalCount = Object.keys(activeTabs).length;
-                document.getElementById('onlineCount').textContent = totalCount < 1 ? 1 : totalCount;
+                document.getElementById('onlineCount').textContent = Object.keys(activeTabs).length || 1;
             }
             window.addEventListener('beforeunload', () => { channel.postMessage({ type: 'disconnect', id: myTabId }); });
-            setInterval(() => { sendPing(); updateUI(); }, 2000);
-            sendPing(); updateUI();
+            setInterval(() => { channel.postMessage({ type: 'ping', id: myTabId }); updateUI(); }, 2000);
+            channel.postMessage({ type: 'ping', id: myTabId }); updateUI();
         }
 
-        // Твой плейлист перезаливов Ниндзяго
+        // ОПТИМИЗИРОВАННЫЙ СИНХРОННЫЙ ПЛЕЙЛИСТ
         const playlist = [
             { id: 'BWVvUc9yl_0', title: '🥷 НИНДЗЯГО — Сезон 5 Серия 1 (Ветер перемен)', duration: 1321 },
             { id: 'o10B-zfrnSI', title: '🥷 НИНДЗЯГО — Сезон 5 Серия 2 (Второе видео)', duration: 1321 }
         ];
         const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
-        let isMuted = true; let lastLoadedVideoId = ""; 
 
         function updateLiveBroadcast() {
-            const currentTimestamp = Math.floor(Date.now() / 1000);
             const playerIframe = document.getElementById('tv-player');
-            let timeInCycle = currentTimestamp % totalDuration; let currentMovie = null;
+            if (!playerIframe) return;
+
+            let timeInCycle = Math.floor(Date.now() / 1000) % totalDuration;
+            let currentMovie = null;
 
             for (let i = 0; i < playlist.length; i++) {
                 if (timeInCycle < playlist[i].duration) {
-                    currentMovie = { id: playlist[i].id, title: playlist[i].title, startFrom: Math.floor(timeInCycle) }; break;
+                    currentMovie = { id: playlist[i].id, title: playlist[i].title, startFrom: Math.floor(timeInCycle) };
+                    break;
                 }
                 timeInCycle -= playlist[i].duration;
             }
-            if (currentMovie && playerIframe) {
-                if (lastLoadedVideoId !== currentMovie.id) {
-                    lastLoadedVideoId = currentMovie.id;
-                    playerIframe.src = `https://youtube.com{currentMovie.id}?autoplay=1&start=${currentMovie.startFrom}&mute=${isMuted?1:0}&controls=0&enablejsapi=1`;
-                    document.getElementById('currentTrack').textContent = 'В эфире: ' + currentMovie.title;
-                }
+
+            if (currentMovie && lastLoadedVideoId !== currentMovie.id) {
+                lastLoadedVideoId = currentMovie.id;
+                playerIframe.src = `https://youtube.com{currentMovie.id}?autoplay=1&start=${currentMovie.startFrom}&mute=${isMuted?1:0}&controls=0&enablejsapi=1`;
+                document.getElementById('currentTrack').textContent = 'В эфире: ' + currentMovie.title;
             }
         }
 
-        fetchUserIP(); initAutonomousOnline(); updateLiveBroadcast(); setInterval(updateLiveBroadcast, 1000);
+        // МГНОВЕННЫЙ СТАРТ ВСЕХ СИСТЕМ ПРИ ЗАГРУЗКЕ
+        initAutonomousOnline();
+        checkSecurityPolicies();
+        updateLiveBroadcast();
+        setInterval(updateLiveBroadcast, 1000);
 
-        // Отправка кода из письма (EmailJS)
+        // ОТПРАВКА КОДА ЧЕРЕЗ EMAILJS
         document.getElementById('nextStepBtn').addEventListener('click', function() {
-            const email = document.getElementById('authEmail').value;
-            const nick = document.getElementById('authNick').value;
-            const pass = document.getElementById('authPass').value;
+            const email = document.getElementById('authEmail').value.trim();
+            const nick = document.getElementById('authNick').value.trim();
+            const pass = document.getElementById('authPass').value.trim();
 
             if (email && nick && pass) {
-                tempNickname = nick; generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
-                if(EMAILJS_PUBLIC_KEY === "ВСТАВЬ_PUBLIC_KEY") {
-                    alert(`[ТЕСТ ИЗ ПИСЬМА ВЕТЕР ТВ]: Секретный код: ${generatedCode}`);
-                    document.getElementById('authStep1Panel').style.display = 'none';
-                    document.getElementById('authStep2Panel').style.display = 'block';
-                } else {
-                    this.innerText = "Отправка..."; this.disabled = true;
-                    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, username: nick, code: generatedCode })
-                        .then(() => { document.getElementById('authStep1Panel').style.display = 'none'; document.getElementById('authStep2Panel').style.display = 'block'; })
-                        .catch(() => { alert("Ошибка EmailJS!"); })
-                        .finally(() => { this.innerText = "Зарегистрироваться/войти"; this.disabled = false; });
-                }
-            } else { alert("Заполните все три поля!"); }
+                tempNickname = nick; 
+                generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
+                this.innerText = "Отправка кода..."; this.disabled = true;
+                
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, username: nick, code: generatedCode })
+                    .then(() => { 
+                        document.getElementById('authStep1Panel').style.display = 'none'; 
+                        document.getElementById('authStep2Panel').style.display = 'block'; 
+                    })
+                    .catch(() => { alert("Ошибка службы писем EmailJS! Проверьте квоты."); })
+                    .finally(() => { this.innerText = "Зарегистрироваться/войти"; this.disabled = false; });
+            } else { alert("Заполните почту, никнейм и пароль!"); }
         });
 
-        // Сверка кода
+        // СВЕРКА СЕКРЕТНОГО КОДА
         document.getElementById('confirmCodeBtn').addEventListener('click', () => {
-            if (document.getElementById('authCode').value === generatedCode) {
+            if (document.getElementById('authCode').value.trim() === generatedCode) {
+                const deviceToken = sessionStorage.getItem('vetertv_device_unique_session') || "token_1";
                 localStorage.setItem('vetertv_nickname', tempNickname);
                 localStorage.setItem('vetertv_auth_time', Date.now().toString());
-                localStorage.setItem('vetertv_auth_ip', currentClientIP);
+                localStorage.setItem('vetertv_auth_device_token', deviceToken);
                 activateAuthorizedUI(tempNickname);
             } else { alert("Неверный код от Ветер ТВ!"); }
         });
         document.getElementById('backToStep1').addEventListener('click', () => { document.getElementById('authStep2Panel').style.display = 'none'; document.getElementById('authStep1Panel').style.display = 'block'; });
 
-        // ЧАТ LOCALSTORAGE
+        // ЛОКАЛЬНЫЙ ЧАТ НА LOCALSTORAGE БЕЗ НАГРУЗКИ НА СЕТЬ
         function loadLocalChat() {
             const chatMessages = document.getElementById('chatMessages');
             let messages = JSON.parse(localStorage.getItem('vetertv_chat_history')) || [];
-            chatMessages.innerHTML = "";
-            messages.forEach(msg => {
-                const msgDiv = document.createElement('div'); msgDiv.innerHTML = `<b>${msg.name}:</b> ${msg.text}`; chatMessages.appendChild(msgDiv);
-            });
+            chatMessages.innerHTML = messages.map(msg => `<div><b>${msg.name}:</b> ${msg.text}</div>`).join('');
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         function sendMessage() {
             const input = document.getElementById('chatInput'); const text = input.value.trim(); const nickname = localStorage.getItem('vetertv_nickname');
             if (text && nickname) {
                 let messages = JSON.parse(localStorage.getItem('vetertv_chat_history')) || []; messages.push({ name: nickname, text: text });
+                if (messages.length > 50) messages.shift(); 
                 localStorage.setItem('vetertv_chat_history', JSON.stringify(messages)); loadLocalChat(); input.value = "";
                 new BroadcastChannel('vetertv_pure_tab_bus').postMessage({ type: 'new_msg' });
             }
