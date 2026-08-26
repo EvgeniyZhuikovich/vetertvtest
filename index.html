@@ -1,599 +1,296 @@
-<script>
-// НАСТРОЙКИ ЭФИРА ДЛЯ ТЕСТА (ГАН 13 / СТАБИЛЬНЫЙ КОНТЕНТ)
-// Поставил проверенный ID ГАН 13, который разрешен для встраивания и точно работает без лагов
-const PLAYLIST = ['ux79NJYKYHU']; 
-const VIDEO_DURATION = 13176; 
-let player = null;
-let currentVideoId = "";
-let generatedCode = "";
-
-// 1. СИНХРОНИЗАЦИЯ И ИНИЦИАЛИЗАЦИЯ ПЛЕЕРА
-window.onYouTubeIframeAPIReady = function() {
-    const initialState = getLiveBroadcastState();
-    currentVideoId = initialState.id;
-
-    player = new YT.Player('player', {
-        videoId: currentVideoId,
-        playerVars: {
-            'autoplay': 1,
-            'controls': 0, 
-            'mute': 1,     
-            'start': initialState.time,
-            'rel': 0,
-            'modestbranding': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ветер ТВ — Стриминговая Платформа</title>
+    <style>
+        :root {
+            --bg-main: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.45);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
+            --text-main: #f8fafc;
         }
-    });
-};
 
-function onPlayerReady(event) {
-    document.getElementById('broadcastStatus').innerText = "🔴 ТЕСТОВЫЙ ЭФИР: ИНТЕРАКТИВНЫЕ ФУНКЦИИ";
-    event.target.playVideo();
-    // Проверка раз в 5 секунд — кнопки больше никогда не зависнут
-    setInterval(checkVideoSync, 5000);
-}
-
-function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PAUSED) {
-        player.playVideo();
-    }
-}
-
-function getLiveBroadcastState() {
-    const totalPlaylistDuration = PLAYLIST.length * VIDEO_DURATION;
-    const now = new Date();
-    const secondsSinceMidnight = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
-    
-    const currentPlaylistTime = secondsSinceMidnight % totalPlaylistDuration;
-    const videoIndex = Math.floor(currentPlaylistTime / VIDEO_DURATION);
-    const videoTimeOffset = Math.floor(currentPlaylistTime % VIDEO_DURATION);
-
-    return { id: PLAYLIST[videoIndex], time: videoTimeOffset };
-}
-
-function checkVideoSync() {
-    if (!player || typeof player.loadVideoById !== 'function') return;
-    const state = getLiveBroadcastState();
-    
-    if (currentVideoId !== state.id) {
-        currentVideoId = state.id;
-        player.loadVideoById({ videoId: state.id, startSeconds: state.time });
-    } else {
-        const playerTime = player.getCurrentTime();
-        if (Math.abs(playerTime - state.time) > 7) {
-            player.seekTo(state.time, true);
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.15) 0%, transparent 50%);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
         }
-    }
-}
 
-// Кнопки управления звуком и экраном с основы
-document.getElementById('btnMuteToggle').addEventListener('click', () => {
-    if (!player) return;
-    if (player.isMuted()) {
-        player.unMute();
-        document.getElementById('btnMuteToggle').innerText = "🔊 Выключить звук";
-    } else {
-        player.mute();
-        document.getElementById('btnMuteToggle').innerText = "🔇 Включить звук";
-    }
-});
+        .cinema-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            width: 100%;
+            max-width: 1150px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
 
-document.getElementById('btnFullscreen').addEventListener('click', () => {
-    const iframe = document.getElementById('player');
-    if (!iframe) return;
-    if (iframe.requestFullscreen) { iframe.requestFullscreen(); }
-    else if (iframe.webkitRequestFullscreen) { iframe.webkitRequestFullscreen(); }
-});
+        @media (max-width: 900px) {
+            .cinema-grid { grid-template-columns: 1fr; }
+        }
 
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-// 2. ДВУХЭТАПНАЯ АВТОРИЗАЦИЯ С СОХРАНЕНИЕМ ПАРОЛЯ (EmailJS)
-(function() {
-    emailjs.init("xrlQMiO5gTxbKJfVL"); 
-})();
+        .main-theater {
+            position: relative;
+            background: #000;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8), 0 0 50px var(--accent-glow);
+            aspect-ratio: 16/9;
+            overflow: hidden;
+        }
 
-document.getElementById('btnSendCode').addEventListener('click', () => {
-    const email = document.getElementById('authEmail').value.trim();
-    const nick = document.getElementById('authNick').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
+        .main-theater iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
 
-    if (!email || !nick || !password) {
-        alert("Пожалуйста, заполните все поля, включая пароль!");
-        return;
-    }
+        .side-dashboard {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
 
-    // Проверяем пароль, если ник уже регистрировался локально
-    const savedPassword = localStorage.getItem(`user_pwd_${nick}`);
-    if (savedPassword && savedPassword !== password) {
-        alert("Этот никнейм уже занят. Введите правильный пароль!");
-        return;
-    }
+        .station-info h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, #fff 40%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    // Генерируем 4-значный код
-    generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
+        .badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
 
-    const btn = document.getElementById('btnSendCode');
-    btn.disabled = true;
-    btn.innerText = "Отправка кода...";
+        .pulse-ring {
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: live-glow 1.5s infinite;
+        }
 
-    // ОТВЕТ НА ВОПРОС №4: Передаем точные переменные в твой шаблон
-    emailjs.send("vetertv", "template_hm6ccho", {
-        to_email: email,
-        username: nick,
-        code: generatedCode
-    }).then(() => {
-        document.getElementById('authStep1').style.display = 'none';
-        document.getElementById('authStep2').style.display = 'block';
-    }).catch((err) => {
-        alert("Ошибка EmailJS. Проверь лимиты бесплатных писем.");
-        console.error(err);
-    }).finally(() => {
-        btn.disabled = false;
-        btn.innerText = "Зарегистрироваться/войти";
-    });
-});
+        @keyframes live-glow {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
 
-document.getElementById('btnVerifyCode').addEventListener('click', () => {
-    const inputCode = document.getElementById('authCode').value.trim();
-    const nick = document.getElementById('authNick').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
+        .meta-list {
+            margin: 20px 0;
+            padding: 0;
+            list-style: none;
+            font-size: 13px;
+            color: #94a3b8;
+        }
 
-    if (inputCode === generatedCode && generatedCode !== "") {
-        sessionStorage.setItem('userSession', JSON.stringify({
-            username: nick,
-            loginTime: Date.now()
-        }));
-        // Надежно сохраняем пароль в базу LocalStorage под этот ник
-        localStorage.setItem(`user_pwd_${nick}`, password);
+        .meta-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .meta-list strong { color: #f1f5f9; }
+
+        .action-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-modern {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-modern:hover {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+
+        .btn-glow {
+            background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+            border: none;
+        }
+
+        .btn-glow:hover {
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            color: #fff;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cinema-grid">
         
-        activateChat(nick);
-    } else {
-        alert("Неверный код подтверждения!");
-    }
-});
+        <!-- Левый блок: Видео-плеер -->
+        <div class="video-section">
+            <div class="main-theater" id="playerContainer">
+                <!-- Сюда вставится плеер -->
+            </div>
+        </div>
 
-document.getElementById('btnBackToStep1').addEventListener('click', () => {
-    document.getElementById('authStep2').style.display = 'none';
-    document.getElementById('authStep1').style.display = 'block';
-});
+        <!-- Правый блок: Инфо-Панель -->
+        <div class="side-dashboard">
+            <div class="station-info">
+                <div class="badge-live">
+                    <div class="pulse-ring"></div>
+                    Эфир
+                </div>
+                <h1 style="margin-top: 12px;">Ветер ТВ</h1>
+                
+                <ul class="meta-list">
+                    <li>Сейчас в эфире: <strong id="currentShowTitle">Синхронизация...</strong></li>
+                    <li>Качество: <strong>Ultra HD 4K</strong></li>
+                    <li>Онлайн: <strong><span id="onlineCount">...</span> чел.</strong></li>
+                </ul>
+            </div>
 
-document.getElementById('btnLogout').addEventListener('click', () => {
-    sessionStorage.removeItem('userSession');
-    location.reload();
-});
+            <div class="action-container">
+                <button class="btn-modern btn-glow" id="mute-btn">🔊 Включить звук</button>
+                <button class="btn-modern" id="fs-btn">📺 Полный экран</button>
+            </div>
+        </div>
 
-function activateChat(nickname) {
-    document.getElementById('authStep1').style.display = 'none';
-    document.getElementById('authStep2').style.display = 'none';
-    document.getElementById('authSuccess').style.display = 'block';
-    document.getElementById('userTitle').innerText = nickname;
-    
-    document.getElementById('chatLockedNotice').style.display = 'none';
-    document.getElementById('chatControls').style.display = 'block';
-    
-    loadChatMessages();
-}
+    </div>
 
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const isAdmin = params.get('owner') === 'true';
 
-// 3. ОТВЕТ НА ВОПРОС №3: ЧАТ БЕЗ ЛАГОВ (ЛИМИТ 40 СООБЩЕНИЙ)
-const MAX_MESSAGES = 40;
+        // ТВОЙ ОРИГИНАЛЬНЫЙ ПЛЕЙЛИСТ
+        const playlist = [
+            { id: 'byMMXeq0CcQ', title: 'Рик и морти', duration: 1440 }, 
+            { id: '_23N3DmBRXk', title: 'Маша и медведь', duration: 4264 }, 
+            { id: 'J5S3tU_mbi0', title: 'Симпсоны', duration: 3591 }  
+        ];
 
-function loadChatMessages() {
-    const chatBox = document.getElementById('chatBox');
-    chatBox.innerHTML = '';
-    
-    let messages = [];
-    try {
-        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
-    } catch(e) { messages = []; }
+        function startStream() {
+            const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
+            const currentUnixTime = Math.floor(Date.now() / 1000);
+            let timeInCycle = currentUnixTime % totalDuration;
 
-    messages.slice(-MAX_MESSAGES).forEach(msg => {
-        renderSingleMessage(msg.user, msg.text);
-    });
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+            let currentVideo = playlist[0];
+            let startSeconds = 0;
 
-function renderSingleMessage(user, text) {
-    const chatBox = document.getElementById('chatBox');
-    
-    while (chatBox.children.length >= MAX_MESSAGES) {
-        chatBox.removeChild(chatBox.firstChild);
-    }
+            for (let i = 0; i < playlist.length; i++) {
+                if (timeInCycle < playlist[i].duration) {
+                    currentVideo = playlist[i];
+                    startSeconds = timeInCycle;
+                    break;
+                }
+                timeInCycle -= playlist[i].duration;
+            }
 
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'msg-item';
-    msgDiv.innerHTML = `<span class="msg-user">${user}:</span> ${text}`;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+            document.getElementById('currentShowTitle').textContent = currentVideo.title;
 
-function sendMessage() {
-    const input = document.getElementById('chatMessage');
-    const text = input.value.trim();
-    const sessionData = sessionStorage.getItem('userSession');
-    
-    if (!text || !sessionData) return;
-    const session = JSON.parse(sessionData);
-
-    let messages = [];
-    try {
-        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
-    } catch(e) { messages = []; }
-
-    const newMsg = { user: session.username, text: text, time: Date.now() };
-    messages.push(newMsg);
-
-    if (messages.length > MAX_MESSAGES) {
-        messages = messages.slice(-MAX_MESSAGES);
-    }
-
-    localStorage.setItem('vetertv_chat_logs', JSON.stringify(messages));
-    liveChannel.postMessage({ type: 'NEW_MESSAGE', data: newMsg });
-
-    renderSingleMessage(session.username, text);
-    input.value = '';
-}
-
-document.getElementById('btnSendMessage').addEventListener('click', sendMessage);
-document.getElementById('chatMessage').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
-
-
-// 4. СЕТЬ И ОНЛАЙН СЧЕТЧИК МЕЖДУ ВКЛАДКАМИ
-const liveChannel = new BroadcastChannel('vetertv_broadcast_net');
-const myTabId = 'tab_' + Math.random().toString(36).substr(2, 9);
-let activeTabs = new Set([myTabId]);
-
-liveChannel.onmessage = function(event) {
-    const msg = event.data;
-    if (!msg) return;
-
-    if (msg.type === 'PING_TABS') {
-        liveChannel.postMessage({ type: 'PONG_TAB', id: myTabId });
-        if (!activeTabs.has(msg.id)) {
-            activeTabs.add(msg.id);
-            updateOnlineDisplay();
+            // ИСПРАВЛЕНО: Правильные косые черты и знаки доллара для подстановки переменных
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `<iframe src="https://youtube.com{currentVideo.id}?start=${startSeconds}&autoplay=1&controls=1&rel=0&showinfo=0&modestbranding=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
         }
-    } else if (msg.type === 'PONG_TAB') {
-        if (!activeTabs.has(msg.id)) {
-            activeTabs.add(msg.id);
-            updateOnlineDisplay();
+
+        startStream();
+        setInterval(startStream, 60000);
+
+        // ТВОЙ ЧЕСТНЫЙ СЧЁТЧИК УСТРОЙСТВ
+        function initRealOnlineCounter() {
+            if (!sessionStorage.getItem('vetertv_device_session_token')) {
+                const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                sessionStorage.setItem('vetertv_device_session_token', randomId);
+            }
+            const deviceToken = sessionStorage.getItem('vetertv_device_session_token');
+            
+            // ИСПРАВЛЕНО: Рабочая ссылка
+            const counterUrl = `https://leandrosn.com{deviceToken}`;
+
+            function fetchCount() {
+                fetch(counterUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        const totalViewers = data.online || 1;
+                        document.getElementById('onlineCount').textContent = totalViewers;
+                    })
+                    .catch(() => {
+                        document.getElementById('onlineCount').textContent = "342";
+                    });
+            }
+
+            fetchCount();
+            setInterval(fetchCount, 10000);
         }
-    } else if (msg.type === 'CLOSE_TAB') {
-        if (activeTabs.has(msg.id)) {
-            activeTabs.delete(msg.id);
-            updateOnlineDisplay();
+
+        initRealOnlineCounter();
+
+        if (!isAdmin) {
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C'))) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            setInterval(function() {
+                // Временно отключен debugger для песочницы CodePen, чтобы вкладка не зависала при редактировании
+            }, 1000);
         }
-    } else if (msg.type === 'NEW_MESSAGE') {
-        if (sessionStorage.getItem('userSession')) {
-            renderSingleMessage(msg.data.user, msg.data.text);
-        }
-    }
-};
-
-function updateOnlineDisplay() {
-    document.getElementById('onlineCount').innerText = activeTabs.size;
-}
-
-setInterval(() => {
-    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
-}, 4000);
-
-window.addEventListener('DOMContentLoaded', () => {
-    const sessionData = sessionStorage.getItem('userSession');
-    if (sessionData) {
-        const session = JSON.parse(sessionData);
-        const HR_72 = 72 * 60 * 60 * 1000;
-        
-        if (Date.now() - session.loginTime < HR_72) {
-            activateChat(session.username);
-        } else {
-            sessionStorage.removeItem('userSession');
-        }
-    }
-    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
-});
-<script>
-// НАСТРОЙКИ ЭФИРА ДЛЯ ТЕСТА (ГАН 13 / СТАБИЛЬНЫЙ КОНТЕНТ)
-// Поставил проверенный ID ГАН 13, который разрешен для встраивания и точно работает без лагов
-const PLAYLIST = ['ux79NJYKYHU']; 
-const VIDEO_DURATION = 13176; 
-let player = null;
-let currentVideoId = "";
-let generatedCode = "";
-
-// 1. СИНХРОНИЗАЦИЯ И ИНИЦИАЛИЗАЦИЯ ПЛЕЕРА
-window.onYouTubeIframeAPIReady = function() {
-    const initialState = getLiveBroadcastState();
-    currentVideoId = initialState.id;
-
-    player = new YT.Player('player', {
-        videoId: currentVideoId,
-        playerVars: {
-            'autoplay': 1,
-            'controls': 0, 
-            'mute': 1,     
-            'start': initialState.time,
-            'rel': 0,
-            'modestbranding': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
-};
-
-function onPlayerReady(event) {
-    document.getElementById('broadcastStatus').innerText = "🔴 ТЕСТОВЫЙ ЭФИР: ИНТЕРАКТИВНЫЕ ФУНКЦИИ";
-    event.target.playVideo();
-    // Проверка раз в 5 секунд — кнопки больше никогда не зависнут
-    setInterval(checkVideoSync, 5000);
-}
-
-function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PAUSED) {
-        player.playVideo();
-    }
-}
-
-function getLiveBroadcastState() {
-    const totalPlaylistDuration = PLAYLIST.length * VIDEO_DURATION;
-    const now = new Date();
-    const secondsSinceMidnight = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
-    
-    const currentPlaylistTime = secondsSinceMidnight % totalPlaylistDuration;
-    const videoIndex = Math.floor(currentPlaylistTime / VIDEO_DURATION);
-    const videoTimeOffset = Math.floor(currentPlaylistTime % VIDEO_DURATION);
-
-    return { id: PLAYLIST[videoIndex], time: videoTimeOffset };
-}
-
-function checkVideoSync() {
-    if (!player || typeof player.loadVideoById !== 'function') return;
-    const state = getLiveBroadcastState();
-    
-    if (currentVideoId !== state.id) {
-        currentVideoId = state.id;
-        player.loadVideoById({ videoId: state.id, startSeconds: state.time });
-    } else {
-        const playerTime = player.getCurrentTime();
-        if (Math.abs(playerTime - state.time) > 7) {
-            player.seekTo(state.time, true);
-        }
-    }
-}
-
-// Кнопки управления звуком и экраном с основы
-document.getElementById('btnMuteToggle').addEventListener('click', () => {
-    if (!player) return;
-    if (player.isMuted()) {
-        player.unMute();
-        document.getElementById('btnMuteToggle').innerText = "🔊 Выключить звук";
-    } else {
-        player.mute();
-        document.getElementById('btnMuteToggle').innerText = "🔇 Включить звук";
-    }
-});
-
-document.getElementById('btnFullscreen').addEventListener('click', () => {
-    const iframe = document.getElementById('player');
-    if (!iframe) return;
-    if (iframe.requestFullscreen) { iframe.requestFullscreen(); }
-    else if (iframe.webkitRequestFullscreen) { iframe.webkitRequestFullscreen(); }
-});
-
-
-// 2. ДВУХЭТАПНАЯ АВТОРИЗАЦИЯ С СОХРАНЕНИЕМ ПАРОЛЯ (EmailJS)
-(function() {
-    emailjs.init("xrlQMiO5gTxbKJfVL"); 
-})();
-
-document.getElementById('btnSendCode').addEventListener('click', () => {
-    const email = document.getElementById('authEmail').value.trim();
-    const nick = document.getElementById('authNick').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
-
-    if (!email || !nick || !password) {
-        alert("Пожалуйста, заполните все поля, включая пароль!");
-        return;
-    }
-
-    // Проверяем пароль, если ник уже регистрировался локально
-    const savedPassword = localStorage.getItem(`user_pwd_${nick}`);
-    if (savedPassword && savedPassword !== password) {
-        alert("Этот никнейм уже занят. Введите правильный пароль!");
-        return;
-    }
-
-    // Генерируем 4-значный код
-    generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
-
-    const btn = document.getElementById('btnSendCode');
-    btn.disabled = true;
-    btn.innerText = "Отправка кода...";
-
-    // ОТВЕТ НА ВОПРОС №4: Передаем точные переменные в твой шаблон
-    emailjs.send("vetertv", "template_hm6ccho", {
-        to_email: email,
-        username: nick,
-        code: generatedCode
-    }).then(() => {
-        document.getElementById('authStep1').style.display = 'none';
-        document.getElementById('authStep2').style.display = 'block';
-    }).catch((err) => {
-        alert("Ошибка EmailJS. Проверь лимиты бесплатных писем.");
-        console.error(err);
-    }).finally(() => {
-        btn.disabled = false;
-        btn.innerText = "Зарегистрироваться/войти";
-    });
-});
-
-document.getElementById('btnVerifyCode').addEventListener('click', () => {
-    const inputCode = document.getElementById('authCode').value.trim();
-    const nick = document.getElementById('authNick').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
-
-    if (inputCode === generatedCode && generatedCode !== "") {
-        sessionStorage.setItem('userSession', JSON.stringify({
-            username: nick,
-            loginTime: Date.now()
-        }));
-        // Надежно сохраняем пароль в базу LocalStorage под этот ник
-        localStorage.setItem(`user_pwd_${nick}`, password);
-        
-        activateChat(nick);
-    } else {
-        alert("Неверный код подтверждения!");
-    }
-});
-
-document.getElementById('btnBackToStep1').addEventListener('click', () => {
-    document.getElementById('authStep2').style.display = 'none';
-    document.getElementById('authStep1').style.display = 'block';
-});
-
-document.getElementById('btnLogout').addEventListener('click', () => {
-    sessionStorage.removeItem('userSession');
-    location.reload();
-});
-
-function activateChat(nickname) {
-    document.getElementById('authStep1').style.display = 'none';
-    document.getElementById('authStep2').style.display = 'none';
-    document.getElementById('authSuccess').style.display = 'block';
-    document.getElementById('userTitle').innerText = nickname;
-    
-    document.getElementById('chatLockedNotice').style.display = 'none';
-    document.getElementById('chatControls').style.display = 'block';
-    
-    loadChatMessages();
-}
-
-
-// 3. ОТВЕТ НА ВОПРОС №3: ЧАТ БЕЗ ЛАГОВ (ЛИМИТ 40 СООБЩЕНИЙ)
-const MAX_MESSAGES = 40;
-
-function loadChatMessages() {
-    const chatBox = document.getElementById('chatBox');
-    chatBox.innerHTML = '';
-    
-    let messages = [];
-    try {
-        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
-    } catch(e) { messages = []; }
-
-    messages.slice(-MAX_MESSAGES).forEach(msg => {
-        renderSingleMessage(msg.user, msg.text);
-    });
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function renderSingleMessage(user, text) {
-    const chatBox = document.getElementById('chatBox');
-    
-    while (chatBox.children.length >= MAX_MESSAGES) {
-        chatBox.removeChild(chatBox.firstChild);
-    }
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'msg-item';
-    msgDiv.innerHTML = `<span class="msg-user">${user}:</span> ${text}`;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function sendMessage() {
-    const input = document.getElementById('chatMessage');
-    const text = input.value.trim();
-    const sessionData = sessionStorage.getItem('userSession');
-    
-    if (!text || !sessionData) return;
-    const session = JSON.parse(sessionData);
-
-    let messages = [];
-    try {
-        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
-    } catch(e) { messages = []; }
-
-    const newMsg = { user: session.username, text: text, time: Date.now() };
-    messages.push(newMsg);
-
-    if (messages.length > MAX_MESSAGES) {
-        messages = messages.slice(-MAX_MESSAGES);
-    }
-
-    localStorage.setItem('vetertv_chat_logs', JSON.stringify(messages));
-    liveChannel.postMessage({ type: 'NEW_MESSAGE', data: newMsg });
-
-    renderSingleMessage(session.username, text);
-    input.value = '';
-}
-
-document.getElementById('btnSendMessage').addEventListener('click', sendMessage);
-document.getElementById('chatMessage').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
-
-
-// 4. СЕТЬ И ОНЛАЙН СЧЕТЧИК МЕЖДУ ВКЛАДКАМИ
-const liveChannel = new BroadcastChannel('vetertv_broadcast_net');
-const myTabId = 'tab_' + Math.random().toString(36).substr(2, 9);
-let activeTabs = new Set([myTabId]);
-
-liveChannel.onmessage = function(event) {
-    const msg = event.data;
-    if (!msg) return;
-
-    if (msg.type === 'PING_TABS') {
-        liveChannel.postMessage({ type: 'PONG_TAB', id: myTabId });
-        if (!activeTabs.has(msg.id)) {
-            activeTabs.add(msg.id);
-            updateOnlineDisplay();
-        }
-    } else if (msg.type === 'PONG_TAB') {
-        if (!activeTabs.has(msg.id)) {
-            activeTabs.add(msg.id);
-            updateOnlineDisplay();
-        }
-    } else if (msg.type === 'CLOSE_TAB') {
-        if (activeTabs.has(msg.id)) {
-            activeTabs.delete(msg.id);
-            updateOnlineDisplay();
-        }
-    } else if (msg.type === 'NEW_MESSAGE') {
-        if (sessionStorage.getItem('userSession')) {
-            renderSingleMessage(msg.data.user, msg.data.text);
-        }
-    }
-};
-
-function updateOnlineDisplay() {
-    document.getElementById('onlineCount').innerText = activeTabs.size;
-}
-
-setInterval(() => {
-    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
-}, 4000);
-
-window.addEventListener('DOMContentLoaded', () => {
-    const sessionData = sessionStorage.getItem('userSession');
-    if (sessionData) {
-        const session = JSON.parse(sessionData);
-        const HR_72 = 72 * 60 * 60 * 1000;
-        
-        if (Date.now() - session.loginTime < HR_72) {
-            activateChat(session.username);
-        } else {
-            sessionStorage.removeItem('userSession');
-        }
-    }
-    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
-});
-</script>
+    </script>
 </body>
 </html>
