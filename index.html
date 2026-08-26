@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Стриминговая Платформа</title>
+    <title>Ветер ТВ — Прямой эфир</title>
     <style>
         :root {
             --bg-main: #020617;
@@ -29,6 +29,7 @@
             -webkit-user-select: none;
         }
 
+        /* Главная сетка в стиле Netflix/Twitch */
         .cinema-grid {
             display: grid;
             grid-template-columns: 1fr 340px;
@@ -43,6 +44,7 @@
             .cinema-grid { grid-template-columns: 1fr; }
         }
 
+        /* Левая часть: Плеер */
         .video-section {
             display: flex;
             flex-direction: column;
@@ -77,6 +79,7 @@
             cursor: default;
         }
 
+        /* Правая часть: Премиум Панель */
         .side-dashboard {
             background: var(--panel-bg);
             backdrop-filter: blur(16px);
@@ -208,7 +211,7 @@
                 <h1 style="margin-top: 12px;">Ветер ТВ</h1>
                 
                 <ul class="meta-list">
-                    <li>Сейчас в эфире: <strong id="currentShowTitle">Симпсоны 24/7</strong></li>
+                    <li>Сейчас в эфире: <strong id="currentShowTitle">Загрузка...</strong></li>
                     <li>Качество: <strong>Ultra HD 4K</strong></li>
                     <li>Онлайн: <strong><span id="onlineCount">Загрузка...</span> чел.</strong></li>
                 </ul>
@@ -220,89 +223,76 @@
             </div>
         </div>
     </div>
+
+    <!-- ПОДКЛЮЧАЕМ ОФИЦИАЛЬНЫЙ API ПЛЕЕРА YOUTUBE ДЛЯ КОНТРОЛЯ ОЧЕРЕДИ -->
+    <script src="https://youtube.com"></script>
+
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('owner') === 'true';
 
+        // ========================================================
+        // 📍 ТВОЙ БЕСКОНЕЧНЫЙ АВТОПЛЕЙЛИСТ (ДОБАВЛЯЙ ХОТЬ 10, ХОТЬ 100 СТРОК)
+        // ========================================================
+        const playlist = [
+            { id: 'sl6GFCdkhRY', title: 'Фиксики Экскаватор' },
+            { id: '2yVAUzZ_nmE', title: 'Фиксики Кодовый замок },
+            { id: 'AK1rAnYXnQ8', title: 'Фиксики Волшебная палочка' }
+            // Сюда через запятую можешь дописывать новые строчки по аналогии!
+        ];
+
+        let currentTrackIndex = 0;
         let isMuted = true;
+        let player;
 
-        const p1 = "https://www.";
-        const p2 = "youtube";
-        const p3 = ".com/";
-        const p4 = "embed/";
-        const secureBaseUrl = p1 + p2 + p3 + p4;
+        // API Ютуба автоматически вызовет эту функцию для сборки плеера
+        function onYouTubeIframeAPIReady() {
+            updatePlayer();
+        }
 
-        const videoId = "J5S3tU_mbi0"; 
-
-        function loadPlayer() {
+        function updatePlayer() {
             try {
+                const currentVideo = playlist[currentTrackIndex];
+                document.getElementById('currentShowTitle').textContent = currentVideo.title;
+
                 const playerContainer = document.getElementById('playerContainer');
-                playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${videoId}?autoplay=1&controls=0&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+                playerContainer.innerHTML = `<div id="yt-iframe-placeholder"></div>`;
+
+                // Инициализируем плеер через официальный объект, чтобы ловить событие окончания видео
+                player = new YT.Player('yt-iframe-placeholder', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: currentVideo.id,
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'rel': 0,
+                        'mute': isMuted ? 1 : 0
+                    },
+                    events: {
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
             } catch(e) { console.error(e); }
         }
 
-        document.getElementById('mute-btn').addEventListener('click', () => {
-            isMuted = !isMuted;
-            document.getElementById('mute-btn').textContent = isMuted ? "🔊 Включить звук" : "🔇 Выключить звук";
-            loadPlayer();
-        });
-
-        document.getElementById('fs-btn').addEventListener('click', () => {
-            const iframe = document.querySelector('#playerContainer iframe');
-            if (iframe) {
-                if (iframe.requestFullscreen) iframe.requestFullscreen();
-                else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+        // КРИТИЧЕСКАЯ ЛОГИКА: Переключение на следующее видео, когда текущее закончилось
+        function onPlayerStateChange(event) {
+            // YT.PlayerState.ENDED означает, что видео досмотрено до конца (0 секунд осталось)
+            if (event.data === YT.PlayerState.ENDED) {
+                currentTrackIndex++;
+                // Если плейлист дошел до конца — запускаем его заново с самого первого видео
+                if (currentTrackIndex >= playlist.length) {
+                    currentTrackIndex = 0;
+                }
+                updatePlayer();
             }
-        });
-
-        loadPlayer();
-
-        function initRealOnlineCounter() {
-            try {
-                if (!sessionStorage.getItem('vetertv_device_session_token')) {
-                    const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-                    sessionStorage.setItem('vetertv_device_session_token', randomId);
-                }
-                const deviceToken = sessionStorage.getItem('vetertv_device_session_token');
-                const counterUrl = `https://leandrosn.com{deviceToken}`;
-
-                fetch(counterUrl)
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('onlineCount').textContent = data.online || 1;
-                    })
-                    .catch(() => {
-                        document.getElementById('onlineCount').textContent = "342";
-                    });
-            } catch(e) { console.error(e); }
         }
 
-        initRealOnlineCounter();
-        setInterval(initRealOnlineCounter, 15000);
-
-        if (!isAdmin) {
-            document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C'))) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-            setInterval(function() {
-                (function() {
-                    try {
-                        (function a(i) {
-                            if (("" + i / i).length !== 1 || i % 20 === 0) {
-                                (function() {}.constructor("debugger")());
-                            } else { a(++i); }
-                        })(0);
-                    } catch (e) {}
-                })();
-            }, 50);
-        } else {
-            const shield = document.querySelector('.player-shield');
-            if (shield) shield.style.display = 'none';
-        }
-    </script>
-</body>
-</html>
+        // Умная кнопка звука (без перезагрузки страницы)
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            if (player && typeof player.mute === 'function') {
+                isMuted = !isMuted;
+                if (isMuted) {
+                    player.mute();
+                    document.getElementById('mute-btn').textContent = "🔊 Включить звук";
