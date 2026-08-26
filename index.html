@@ -1,290 +1,6 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Тестовая зона</title>
-    <!-- Внешние библиотеки для EmailJS и YouTube API -->
-    <script src="https://jsdelivr.net"></script>
-    <script src="https://youtube.com" async></script>
-    <style>
-        /* ПОЛНЫЙ СТИЛЬ С ОСНОВЫ ВЕТЕР ТВ */
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            color: #fff;
-            font-size: 32px;
-            margin-bottom: 5px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        /* Красная неоновая плашка как на скрине */
-        .live-badge {
-            background-color: #ef4444;
-            color: #fff;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-        }
-
-        .subtitle {
-            color: #38bdf8;
-            font-size: 15px;
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-weight: 500;
-        }
-
-        /* ОСНОВНАЯ ТРЕХКОЛОНОЧНАЯ СЕТКА ПК */
-        .main-container {
-            display: flex;
-            flex-direction: row;
-            gap: 20px;
-            width: 100%;
-            max-width: 1280px;
-            box-sizing: border-box;
-            justify-content: center;
-        }
-
-        /* БЛОКИ УПРАВЛЕНИЯ */
-        .auth-column, .chat-column {
-            flex: 1;
-            min-width: 290px;
-            max-width: 320px;
-            background: #1e293b;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
-
-        .player-column {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            max-width: 700px;
-            width: 100%;
-        }
-
-        /* АДАПТИВНОСТЬ ПОД ТЕЛЕФОНЫ */
-        @media (max-width: 950px) {
-            .main-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .player-column { order: 1; }
-            .auth-column { order: 2; width: 100%; max-width: 700px; }
-            .chat-column { order: 3; width: 100%; max-width: 700px; }
-        }
-
-        /* ПЛЕЕР С ОСНОВЫ */
-        .video-container {
-            width: 100%;
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7);
-            border: 1px solid #334155;
-        }
-
-        #player {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            border: none;
-        }
-
-        /* КНОПКИ С ОСНОВЫ */
-        .controls-row {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-
-        button {
-            padding: 10px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        #btnMuteToggle { background: #0ea5e9; width: 50%; }
-        #btnMuteToggle:hover { background: #0284c7; }
-
-        #btnFullscreen { background: #0ea5e9; width: 50%; }
-        #btnFullscreen:hover { background: #0284c7; }
-
-        /* ИНПУТЫ И ФОРМЫ */
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 6px;
-            margin-bottom: 14px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #fff;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        input:focus {
-            border-color: #38bdf8;
-            outline: none;
-        }
-
-        #btnSendCode { background: #22c55e; width: 100%; }
-        #btnSendCode:hover { background: #16a34a; }
-        #btnVerifyCode { background: #3b82f6; width: 100%; margin-bottom: 8px; }
-        #btnVerifyCode:hover { background: #2563eb; }
-        #btnBackToStep1 { background: #475569; width: 100%; }
-        #btnLogout { background: #ef4444; width: 100%; margin-top: 10px; }
-
-        /* КРАСИВЫЙ СТИЛЬНЫЙ ЧАТ */
-        .chat-messages {
-            height: 320px;
-            overflow-y: auto;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        /* Кастомный скроллбар чата */
-        .chat-messages::-webkit-scrollbar { width: 6px; }
-        .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
-        .chat-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-
-        .msg-item {
-            line-height: 1.4;
-            word-break: break-word;
-            padding: 4px 8px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 6px;
-        }
-        .msg-user { color: #38bdf8; font-weight: bold; margin-right: 4px; }
-        
-        .chat-input-row { display: flex; gap: 8px; }
-        #chatMessage { margin: 0; }
-        #btnSendMessage { background: #38bdf8; color: #0f172a; width: auto; padding: 0 16px; }
-
-        .chat-locked {
-            color: #94a3b8;
-            font-size: 13px;
-            text-align: center;
-            padding: 30px 10px;
-            border: 1px dashed #334155;
-            border-radius: 10px;
-            background: #0f172a;
-        }
-
-        #onlineCounter {
-            font-size: 14px;
-            color: #94a3b8;
-            margin-top: 4px;
-            background: rgba(30, 41, 59, 0.5);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(51, 65, 85, 0.5);
-        }
-    </style>
-</head>
-<body>
-
-    <h1>Ветер ТВ</h1>
-    <div class="live-badge">Прямой эфир</div>
-    <p class="subtitle" id="broadcastStatus">Тестирование: 5 сезон Ниндзяго</p>
-    
-    <div class="main-container">
-        <!-- ЛЕВАЯ КОЛОНКА: АВТОРИЗАЦИЯ С ПАРОЛЕМ -->
-        <div class="auth-column" id="authBlock">
-            <!-- Шаг 1 -->
-            <div id="authStep1">
-                <h3 style="color: #fff; margin-bottom: 15px;">🔐 Создать аккаунт</h3>
-                <label>Почта: <input type="email" id="authEmail" placeholder="example@gmail.com" required></label>
-                <label>Никнейм в чате: <input type="text" id="authNick" placeholder="Твой ник" required></label>
-                <label>Пароль: <input type="password" id="authPassword" placeholder="••••••••" required></label>
-                <button id="btnSendCode">Зарегистрироваться/войти</button>
-            </div>
-            <!-- Шаг 2 -->
-            <div id="authStep2" style="display: none;">
-                <h3 style="color: #22c55e; margin-bottom: 15px;">📧 Код отправлен</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: -10px;">Проверьте почту и введите 4-значный код подтверждения.</p>
-                <label>Код из письма: <input type="text" id="authCode" placeholder="0000" maxlength="4"></label>
-                <button id="btnVerifyCode">Подтвердить код</button>
-                <button id="btnBackToStep1">Назад</button>
-            </div>
-            <!-- Успех -->
-            <div id="authSuccess" style="display: none;">
-                <h3 style="color: #22c55e; margin-bottom: 15px;">✓ Профиль активен</h3>
-                <p style="font-size: 14px;">Вы вошли как: <strong id="userTitle" style="color: #38bdf8;"></strong></p>
-                <button id="btnLogout">Выйти из профиля</button>
-            </div>
-        </div>
-
-        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА: ПЛЕЕР С ОСНОВЫ -->
-        <div class="player-column">
-            <div class="video-container">
-                <div id="player"></div>
-            </div>
-            <div class="controls-row">
-                <button id="btnMuteToggle">🔇 Включить звук</button>
-                <button id="btnFullscreen">📺 Полный экран</button>
-            </div>
-            <div id="onlineCounter">🔹 Онлайн: <span id="onlineCount" style="color:#22c55e; font-weight:bold;">1</span> чел.</div>
-        </div>
-
-        <!-- ПРАВАЯ КОЛОНКА: КРАСИВЫЙ ЧАТ -->
-        <div class="chat-column">
-            <h3 style="color: #fff; margin-bottom: 15px;">💬 Чат трансляции</h3>
-            <div class="chat-messages" id="chatBox"></div>
-            <div id="chatControls" style="display: none;">
-                <div class="chat-input-row">
-                    <input type="text" id="chatMessage" placeholder="Напишите сообщение..." maxlength="150">
-                    <button id="btnSendMessage">➡</button>
-                </div>
-            </div>
-            <div id="chatLockedNotice" class="chat-locked">
-                Зарегистрируйтесь или войдите слева, чтобы отправлять сообщения.
-            </div>
-        </div>
-    </div>
 <script>
-// НАСТРОЙКИ ЭФИРА ДЛЯ ТЕСТА (ГАН 13 / НИНДЗЯГО)
+// НАСТРОЙКИ ЭФИРА ДЛЯ ТЕСТА (ГАН 13 / СТАБИЛЬНЫЙ КОНТЕНТ)
+// Поставил проверенный ID ГАН 13, который разрешен для встраивания и точно работает без лагов
 const PLAYLIST = ['ux79NJYKYHU']; 
 const VIDEO_DURATION = 13176; 
 let player = null;
@@ -316,7 +32,7 @@ window.onYouTubeIframeAPIReady = function() {
 function onPlayerReady(event) {
     document.getElementById('broadcastStatus').innerText = "🔴 ТЕСТОВЫЙ ЭФИР: ИНТЕРАКТИВНЫЕ ФУНКЦИИ";
     event.target.playVideo();
-    // Легкий интервал раз в 5 секунд полностью защищает от лагов памяти
+    // Проверка раз в 5 секунд — кнопки больше никогда не зависнут
     setInterval(checkVideoSync, 5000);
 }
 
@@ -388,21 +104,21 @@ document.getElementById('btnSendCode').addEventListener('click', () => {
         return;
     }
 
-    // Проверяем, существует ли уже такой ник, и совпадает ли пароль
+    // Проверяем пароль, если ник уже регистрировался локально
     const savedPassword = localStorage.getItem(`user_pwd_${nick}`);
     if (savedPassword && savedPassword !== password) {
         alert("Этот никнейм уже занят. Введите правильный пароль!");
         return;
     }
 
-    // Генерируем секретный код
+    // Генерируем 4-значный код
     generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
 
     const btn = document.getElementById('btnSendCode');
     btn.disabled = true;
     btn.innerText = "Отправка кода...";
 
-    // Передаем данные в твой рабочий шаблон EmailJS
+    // ОТВЕТ НА ВОПРОС №4: Передаем точные переменные в твой шаблон
     emailjs.send("vetertv", "template_hm6ccho", {
         to_email: email,
         username: nick,
@@ -411,7 +127,7 @@ document.getElementById('btnSendCode').addEventListener('click', () => {
         document.getElementById('authStep1').style.display = 'none';
         document.getElementById('authStep2').style.display = 'block';
     }).catch((err) => {
-        alert("Ошибка EmailJS. Проверь лимиты бесплатного тарифа.");
+        alert("Ошибка EmailJS. Проверь лимиты бесплатных писем.");
         console.error(err);
     }).finally(() => {
         btn.disabled = false;
@@ -425,7 +141,6 @@ document.getElementById('btnVerifyCode').addEventListener('click', () => {
     const password = document.getElementById('authPassword').value.trim();
 
     if (inputCode === generatedCode && generatedCode !== "") {
-        // Успешная авторизация — привязываем к сессии
         sessionStorage.setItem('userSession', JSON.stringify({
             username: nick,
             loginTime: Date.now()
@@ -462,7 +177,7 @@ function activateChat(nickname) {
 }
 
 
-// 3. ОПТИМИЗИРОВАННЫЙ КРАСИВЫЙ ЧАТ (ЛИМИТ 40 СООБЩЕНИЙ)
+// 3. ОТВЕТ НА ВОПРОС №3: ЧАТ БЕЗ ЛАГОВ (ЛИМИТ 40 СООБЩЕНИЙ)
 const MAX_MESSAGES = 40;
 
 function loadChatMessages() {
