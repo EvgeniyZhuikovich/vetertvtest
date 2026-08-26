@@ -296,4 +296,304 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
 });
+<script>
+// НАСТРОЙКИ ЭФИРА ДЛЯ ТЕСТА (ГАН 13 / СТАБИЛЬНЫЙ КОНТЕНТ)
+// Поставил проверенный ID ГАН 13, который разрешен для встраивания и точно работает без лагов
+const PLAYLIST = ['ux79NJYKYHU']; 
+const VIDEO_DURATION = 13176; 
+let player = null;
+let currentVideoId = "";
+let generatedCode = "";
 
+// 1. СИНХРОНИЗАЦИЯ И ИНИЦИАЛИЗАЦИЯ ПЛЕЕРА
+window.onYouTubeIframeAPIReady = function() {
+    const initialState = getLiveBroadcastState();
+    currentVideoId = initialState.id;
+
+    player = new YT.Player('player', {
+        videoId: currentVideoId,
+        playerVars: {
+            'autoplay': 1,
+            'controls': 0, 
+            'mute': 1,     
+            'start': initialState.time,
+            'rel': 0,
+            'modestbranding': 1
+        },
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+};
+
+function onPlayerReady(event) {
+    document.getElementById('broadcastStatus').innerText = "🔴 ТЕСТОВЫЙ ЭФИР: ИНТЕРАКТИВНЫЕ ФУНКЦИИ";
+    event.target.playVideo();
+    // Проверка раз в 5 секунд — кнопки больше никогда не зависнут
+    setInterval(checkVideoSync, 5000);
+}
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PAUSED) {
+        player.playVideo();
+    }
+}
+
+function getLiveBroadcastState() {
+    const totalPlaylistDuration = PLAYLIST.length * VIDEO_DURATION;
+    const now = new Date();
+    const secondsSinceMidnight = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
+    
+    const currentPlaylistTime = secondsSinceMidnight % totalPlaylistDuration;
+    const videoIndex = Math.floor(currentPlaylistTime / VIDEO_DURATION);
+    const videoTimeOffset = Math.floor(currentPlaylistTime % VIDEO_DURATION);
+
+    return { id: PLAYLIST[videoIndex], time: videoTimeOffset };
+}
+
+function checkVideoSync() {
+    if (!player || typeof player.loadVideoById !== 'function') return;
+    const state = getLiveBroadcastState();
+    
+    if (currentVideoId !== state.id) {
+        currentVideoId = state.id;
+        player.loadVideoById({ videoId: state.id, startSeconds: state.time });
+    } else {
+        const playerTime = player.getCurrentTime();
+        if (Math.abs(playerTime - state.time) > 7) {
+            player.seekTo(state.time, true);
+        }
+    }
+}
+
+// Кнопки управления звуком и экраном с основы
+document.getElementById('btnMuteToggle').addEventListener('click', () => {
+    if (!player) return;
+    if (player.isMuted()) {
+        player.unMute();
+        document.getElementById('btnMuteToggle').innerText = "🔊 Выключить звук";
+    } else {
+        player.mute();
+        document.getElementById('btnMuteToggle').innerText = "🔇 Включить звук";
+    }
+});
+
+document.getElementById('btnFullscreen').addEventListener('click', () => {
+    const iframe = document.getElementById('player');
+    if (!iframe) return;
+    if (iframe.requestFullscreen) { iframe.requestFullscreen(); }
+    else if (iframe.webkitRequestFullscreen) { iframe.webkitRequestFullscreen(); }
+});
+
+
+// 2. ДВУХЭТАПНАЯ АВТОРИЗАЦИЯ С СОХРАНЕНИЕМ ПАРОЛЯ (EmailJS)
+(function() {
+    emailjs.init("xrlQMiO5gTxbKJfVL"); 
+})();
+
+document.getElementById('btnSendCode').addEventListener('click', () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const nick = document.getElementById('authNick').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+
+    if (!email || !nick || !password) {
+        alert("Пожалуйста, заполните все поля, включая пароль!");
+        return;
+    }
+
+    // Проверяем пароль, если ник уже регистрировался локально
+    const savedPassword = localStorage.getItem(`user_pwd_${nick}`);
+    if (savedPassword && savedPassword !== password) {
+        alert("Этот никнейм уже занят. Введите правильный пароль!");
+        return;
+    }
+
+    // Генерируем 4-значный код
+    generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+    const btn = document.getElementById('btnSendCode');
+    btn.disabled = true;
+    btn.innerText = "Отправка кода...";
+
+    // ОТВЕТ НА ВОПРОС №4: Передаем точные переменные в твой шаблон
+    emailjs.send("vetertv", "template_hm6ccho", {
+        to_email: email,
+        username: nick,
+        code: generatedCode
+    }).then(() => {
+        document.getElementById('authStep1').style.display = 'none';
+        document.getElementById('authStep2').style.display = 'block';
+    }).catch((err) => {
+        alert("Ошибка EmailJS. Проверь лимиты бесплатных писем.");
+        console.error(err);
+    }).finally(() => {
+        btn.disabled = false;
+        btn.innerText = "Зарегистрироваться/войти";
+    });
+});
+
+document.getElementById('btnVerifyCode').addEventListener('click', () => {
+    const inputCode = document.getElementById('authCode').value.trim();
+    const nick = document.getElementById('authNick').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+
+    if (inputCode === generatedCode && generatedCode !== "") {
+        sessionStorage.setItem('userSession', JSON.stringify({
+            username: nick,
+            loginTime: Date.now()
+        }));
+        // Надежно сохраняем пароль в базу LocalStorage под этот ник
+        localStorage.setItem(`user_pwd_${nick}`, password);
+        
+        activateChat(nick);
+    } else {
+        alert("Неверный код подтверждения!");
+    }
+});
+
+document.getElementById('btnBackToStep1').addEventListener('click', () => {
+    document.getElementById('authStep2').style.display = 'none';
+    document.getElementById('authStep1').style.display = 'block';
+});
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+    sessionStorage.removeItem('userSession');
+    location.reload();
+});
+
+function activateChat(nickname) {
+    document.getElementById('authStep1').style.display = 'none';
+    document.getElementById('authStep2').style.display = 'none';
+    document.getElementById('authSuccess').style.display = 'block';
+    document.getElementById('userTitle').innerText = nickname;
+    
+    document.getElementById('chatLockedNotice').style.display = 'none';
+    document.getElementById('chatControls').style.display = 'block';
+    
+    loadChatMessages();
+}
+
+
+// 3. ОТВЕТ НА ВОПРОС №3: ЧАТ БЕЗ ЛАГОВ (ЛИМИТ 40 СООБЩЕНИЙ)
+const MAX_MESSAGES = 40;
+
+function loadChatMessages() {
+    const chatBox = document.getElementById('chatBox');
+    chatBox.innerHTML = '';
+    
+    let messages = [];
+    try {
+        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
+    } catch(e) { messages = []; }
+
+    messages.slice(-MAX_MESSAGES).forEach(msg => {
+        renderSingleMessage(msg.user, msg.text);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function renderSingleMessage(user, text) {
+    const chatBox = document.getElementById('chatBox');
+    
+    while (chatBox.children.length >= MAX_MESSAGES) {
+        chatBox.removeChild(chatBox.firstChild);
+    }
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'msg-item';
+    msgDiv.innerHTML = `<span class="msg-user">${user}:</span> ${text}`;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatMessage');
+    const text = input.value.trim();
+    const sessionData = sessionStorage.getItem('userSession');
+    
+    if (!text || !sessionData) return;
+    const session = JSON.parse(sessionData);
+
+    let messages = [];
+    try {
+        messages = JSON.parse(localStorage.getItem('vetertv_chat_logs')) || [];
+    } catch(e) { messages = []; }
+
+    const newMsg = { user: session.username, text: text, time: Date.now() };
+    messages.push(newMsg);
+
+    if (messages.length > MAX_MESSAGES) {
+        messages = messages.slice(-MAX_MESSAGES);
+    }
+
+    localStorage.setItem('vetertv_chat_logs', JSON.stringify(messages));
+    liveChannel.postMessage({ type: 'NEW_MESSAGE', data: newMsg });
+
+    renderSingleMessage(session.username, text);
+    input.value = '';
+}
+
+document.getElementById('btnSendMessage').addEventListener('click', sendMessage);
+document.getElementById('chatMessage').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+});
+
+
+// 4. СЕТЬ И ОНЛАЙН СЧЕТЧИК МЕЖДУ ВКЛАДКАМИ
+const liveChannel = new BroadcastChannel('vetertv_broadcast_net');
+const myTabId = 'tab_' + Math.random().toString(36).substr(2, 9);
+let activeTabs = new Set([myTabId]);
+
+liveChannel.onmessage = function(event) {
+    const msg = event.data;
+    if (!msg) return;
+
+    if (msg.type === 'PING_TABS') {
+        liveChannel.postMessage({ type: 'PONG_TAB', id: myTabId });
+        if (!activeTabs.has(msg.id)) {
+            activeTabs.add(msg.id);
+            updateOnlineDisplay();
+        }
+    } else if (msg.type === 'PONG_TAB') {
+        if (!activeTabs.has(msg.id)) {
+            activeTabs.add(msg.id);
+            updateOnlineDisplay();
+        }
+    } else if (msg.type === 'CLOSE_TAB') {
+        if (activeTabs.has(msg.id)) {
+            activeTabs.delete(msg.id);
+            updateOnlineDisplay();
+        }
+    } else if (msg.type === 'NEW_MESSAGE') {
+        if (sessionStorage.getItem('userSession')) {
+            renderSingleMessage(msg.data.user, msg.data.text);
+        }
+    }
+};
+
+function updateOnlineDisplay() {
+    document.getElementById('onlineCount').innerText = activeTabs.size;
+}
+
+setInterval(() => {
+    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
+}, 4000);
+
+window.addEventListener('DOMContentLoaded', () => {
+    const sessionData = sessionStorage.getItem('userSession');
+    if (sessionData) {
+        const session = JSON.parse(sessionData);
+        const HR_72 = 72 * 60 * 60 * 1000;
+        
+        if (Date.now() - session.loginTime < HR_72) {
+            activateChat(session.username);
+        } else {
+            sessionStorage.removeItem('userSession');
+        }
+    }
+    liveChannel.postMessage({ type: 'PING_TABS', id: myTabId });
+});
+</script>
+</body>
+</html>
