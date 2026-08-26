@@ -201,9 +201,9 @@
         <!-- Левый блок: Видео-плеер и защитный щит -->
         <div class="video-section">
             <div class="main-theater" id="playerContainer">
-                <!-- Сюда скрипт вставит iframe -->
+                <!-- Сюда динамически встанет плеер -->
             </div>
-            <!-- Прозрачный щит блокирует клики внутри плеера, убирая паузу Ютуба -->
+            <!-- Прозрачный щит блокирует клики внутри плеера -->
             <div class="player-shield"></div>
         </div>
 
@@ -231,7 +231,7 @@
     </div>
 
     <script>
-        // Секретный админ-ключ (?owner=true) для снятия защиты
+        // Секретный админ-ключ (?owner=true)
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('owner') === 'true';
 
@@ -261,7 +261,7 @@
                 const currentUnixTime = Math.floor(Date.now() / 1000);
                 let timeInCycle = currentUnixTime % totalDuration;
 
-                let currentVideo = playlist;
+                let currentVideo = playlist[0];
                 let startSeconds = 0;
 
                 for (let i = 0; i < playlist.length; i++) {
@@ -279,7 +279,7 @@
                     lastLoadedVideoId = currentVideo.id;
                     const playerContainer = document.getElementById('playerContainer');
                     
-                    // ПОЛНЫЙ ФИКС: Используются косые кавычки ` и правильный синтаксис ${startSeconds}
+                    // ПОЛНЫЙ ФИКС: Исправлена опечатка ${currentVideo.id}
                     playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${currentVideo.id}?start=${startSeconds}&autoplay=1&controls=1&rel=0&mute=${isMuted ? 1 : 0}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
                 }
             } catch(e) { console.error("Ошибка стрима:", e); }
@@ -289,8 +289,10 @@
         document.getElementById('mute-btn').addEventListener('click', () => {
             isMuted = !isMuted;
             document.getElementById('mute-btn').textContent = isMuted ? "🔇 Выключить звук" : "🔊 Включить звук";
-            lastLoadedVideoId = ""; // Сброс ID для перезапуска плеера со звуком
+            lastLoadedVideoId = ""; 
             startStream();
         });
 
         // Логика кнопки полного экрана
+        document.getElementById('fs-btn').addEventListener('click', () => {
+            const iframe = document.querySelector('#playerContainer iframe');
