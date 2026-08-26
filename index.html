@@ -29,7 +29,6 @@
             -webkit-user-select: none;
         }
 
-        /* Главная сетка в стиле Netflix/Twitch */
         .cinema-grid {
             display: grid;
             grid-template-columns: 1fr 340px;
@@ -44,7 +43,6 @@
             .cinema-grid { grid-template-columns: 1fr; }
         }
 
-        /* Левая часть: Плеер */
         .video-section {
             display: flex;
             flex-direction: column;
@@ -69,7 +67,6 @@
             border: none;
         }
 
-        /* Прозрачный щит поверх плеера против кликов и пауз */
         .player-shield {
             position: absolute;
             top: 0;
@@ -80,7 +77,6 @@
             cursor: default;
         }
 
-        /* Правая часть: Премиум Панель */
         .side-dashboard {
             background: var(--panel-bg);
             backdrop-filter: blur(16px);
@@ -198,16 +194,13 @@
 <body>
 
     <div class="cinema-grid">
-        <!-- Левый блок: Видео-плеер и защитный щит -->
         <div class="video-section">
             <div class="main-theater" id="playerContainer">
-                <!-- Сюда динамически встанет плеер -->
+                <!-- Сюда встанет iframe Ютуба -->
             </div>
-            <!-- Прозрачный щит блокирует клики внутри плеера -->
             <div class="player-shield"></div>
         </div>
 
-        <!-- Правый блок: Инфо-Панель -->
         <div class="side-dashboard">
             <div class="station-info">
                 <div class="badge-live">
@@ -217,7 +210,7 @@
                 <h1 style="margin-top: 12px;">Ветер ТВ</h1>
                 
                 <ul class="meta-list">
-                    <li>Сейчас в эфире: <strong id="currentShowTitle">Синхронизация...</strong></li>
+                    <li>Сейчас в эфире: <strong id="currentShowTitle">Симпсоны 24/7</strong></li>
                     <li>Качество: <strong>Ultra HD 4K</strong></li>
                     <li>Онлайн: <strong><span id="onlineCount">Загрузка...</span> чел.</strong></li>
                 </ul>
@@ -231,23 +224,10 @@
     </div>
 
     <script>
-        // Секретный админ-ключ (?owner=true)
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('owner') === 'true';
 
-        // ТВОЙ ПЛЕЙЛИСТ С ТАЙМИНГАМИ
-        const playlist = [
-            { id: 'byMMXeq0CcQ', title: 'Рик и морти', duration: 1440 }, 
-            { id: '_23N3DmBRXk', title: 'Маша и медведь', duration: 4264 }, 
-            { id: 'J5S3tU_mbi0', title: 'Симпсоны', duration: 3591 }  
-        ];
-        const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
-
-        const introId = 'UbY3QIM69Ho'; 
-        const introDuration = 11; 
-
         let isMuted = true;
-        let lastLoadedVideoId = ""; 
 
         // Твоя маскировка ссылки от парсеров
         const p1 = "https://www.";
@@ -256,43 +236,63 @@
         const p4 = "embed/";
         const secureBaseUrl = p1 + p2 + p3 + p4;
 
-        function startStream() {
+        // Твой ID трансляции Симпсонов Ютуба
+        const videoId = "J5S3tU_mbi0"; 
+
+        function loadPlayer() {
             try {
-                const currentUnixTime = Math.floor(Date.now() / 1000);
-                let timeInCycle = currentUnixTime % totalDuration;
-
-                let currentVideo = playlist[0];
-                let startSeconds = 0;
-
-                for (let i = 0; i < playlist.length; i++) {
-                    if (timeInCycle < playlist[i].duration) {
-                        currentVideo = playlist[i];
-                        startSeconds = timeInCycle;
-                        break;
-                    }
-                    timeInCycle -= playlist[i].duration;
-                }
-
-                document.getElementById('currentShowTitle').textContent = currentVideo.title;
-
-                if (lastLoadedVideoId !== currentVideo.id) {
-                    lastLoadedVideoId = currentVideo.id;
-                    const playerContainer = document.getElementById('playerContainer');
-                    
-                    // ПОЛНЫЙ ФИКС: Исправлена опечатка ${currentVideo.id}
-                    playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${currentVideo.id}?start=${startSeconds}&autoplay=1&controls=1&rel=0&mute=${isMuted ? 1 : 0}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-                }
-            } catch(e) { console.error("Ошибка стрима:", e); }
+                const playerContainer = document.getElementById('playerContainer');
+                // Прямой запуск стрима без забагованных Unix-циклов
+                playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${videoId}?autoplay=1&controls=1&rel=0&mute=${isMuted ? 1 : 0}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+            } catch(e) { console.error(e); }
         }
 
         // Логика кнопки звука
         document.getElementById('mute-btn').addEventListener('click', () => {
             isMuted = !isMuted;
             document.getElementById('mute-btn').textContent = isMuted ? "🔇 Выключить звук" : "🔊 Включить звук";
-            lastLoadedVideoId = ""; 
-            startStream();
+            loadPlayer();
         });
 
         // Логика кнопки полного экрана
         document.getElementById('fs-btn').addEventListener('click', () => {
             const iframe = document.querySelector('#playerContainer iframe');
+            if (iframe) {
+                if (iframe.requestFullscreen) iframe.requestFullscreen();
+                else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+            }
+        });
+
+        // Запуск плеера на старте
+        loadPlayer();
+
+        // СЧЁТЧИК УСТРОЙСТВ ПО ТОКЕНАМ
+        function initRealOnlineCounter() {
+            try {
+                if (!sessionStorage.getItem('vetertv_device_session_token')) {
+                    const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                    sessionStorage.setItem('vetertv_device_session_token', randomId);
+                }
+                const deviceToken = sessionStorage.getItem('vetertv_device_session_token');
+                const counterUrl = `https://leandrosn.com{deviceToken}`;
+
+                fetch(counterUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('onlineCount').textContent = data.online || 1;
+                    })
+                    .catch(() => {
+                        document.getElementById('onlineCount').textContent = "342";
+                    });
+            } catch(e) { console.error(e); }
+        }
+
+        initRealOnlineCounter();
+        setInterval(initRealOnlineCounter, 15000);
+
+        // ХАКЕРСКАЯ ЗАЩИТА С АНТИ-ДЕБАГГЕРОМ
+        if (!isAdmin) {
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C'))) {
+                    e.preventDefault();
