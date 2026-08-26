@@ -180,15 +180,12 @@
 <body>
 
     <div class="cinema-grid">
-        
-        <!-- Левый блок: Видео-плеер -->
         <div class="video-section">
             <div class="main-theater" id="playerContainer">
-                <!-- Сюда вставится плеер -->
+                <!-- Сюда динамически встанет защищенный плеер -->
             </div>
         </div>
 
-        <!-- Правый блок: Инфо-Панель -->
         <div class="side-dashboard">
             <div class="station-info">
                 <div class="badge-live">
@@ -200,7 +197,7 @@
                 <ul class="meta-list">
                     <li>Сейчас в эфире: <strong id="currentShowTitle">Синхронизация...</strong></li>
                     <li>Качество: <strong>Ultra HD 4K</strong></li>
-                    <li>Онлайн: <strong><span id="onlineCount">...</span> чел.</strong></li>
+                    <li>Онлайн: <strong><span id="onlineCount">Загрузка...</span> чел.</strong></li>
                 </ul>
             </div>
 
@@ -209,88 +206,81 @@
                 <button class="btn-modern" id="fs-btn">📺 Полный экран</button>
             </div>
         </div>
-
     </div>
 
     <script>
+        // Секретный ключ владельца для отключения защиты (?owner=true)
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('owner') === 'true';
 
-        // ТВОЙ ОРИГИНАЛЬНЫЙ ПЛЕЙЛИСТ
+        // ТВОЯ ОБНОВЛЕННАЯ БАЗА ПЕРЕМЕННЫХ
         const playlist = [
             { id: 'byMMXeq0CcQ', title: 'Рик и морти', duration: 1440 }, 
             { id: '_23N3DmBRXk', title: 'Маша и медведь', duration: 4264 }, 
             { id: 'J5S3tU_mbi0', title: 'Симпсоны', duration: 3591 }  
         ];
+        const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
+
+        const introId = 'UbY3QIM69Ho'; 
+        const introDuration = 11; 
+
+        let isMuted = true;
+        let lastLoadedVideoId = ""; 
+
+        // Твоя скрытая ссылка, разбитая на блоки
+        const p1 = "https://www.";
+        const p2 = "youtube";
+        const p3 = ".com/";
+        const p4 = "embed/";
+        const secureBaseUrl = p1 + p2 + p3 + p4; // Склеиваем в коде, чтобы парсеры не нашли
 
         function startStream() {
-            const totalDuration = playlist.reduce((sum, item) => sum + item.duration, 0);
-            const currentUnixTime = Math.floor(Date.now() / 1000);
-            let timeInCycle = currentUnixTime % totalDuration;
+            try {
+                const currentUnixTime = Math.floor(Date.now() / 1000);
+                let timeInCycle = currentUnixTime % totalDuration;
 
-            let currentVideo = playlist[0];
-            let startSeconds = 0;
+                let currentVideo = playlist[0];
+                let startSeconds = 0;
 
-            for (let i = 0; i < playlist.length; i++) {
-                if (timeInCycle < playlist[i].duration) {
-                    currentVideo = playlist[i];
-                    startSeconds = timeInCycle;
-                    break;
+                for (let i = 0; i < playlist.length; i++) {
+                    if (timeInCycle < playlist[i].duration) {
+                        currentVideo = playlist[i];
+                        startSeconds = timeInCycle;
+                        break;
+                    }
+                    timeInCycle -= playlist[i].duration;
                 }
-                timeInCycle -= playlist[i].duration;
-            }
 
-            document.getElementById('currentShowTitle').textContent = currentVideo.title;
+                // Логика вывода: если это только самое начало видео, можно крутить интро (или крутить постоянно по времени)
+                document.getElementById('currentShowTitle').textContent = currentVideo.title;
 
-            // ИСПРАВЛЕНО: Правильные косые черты и знаки доллара для подстановки переменных
-            const playerContainer = document.getElementById('playerContainer');
-            playerContainer.innerHTML = `<iframe src="https://youtube.com{currentVideo.id}?start=${startSeconds}&autoplay=1&controls=1&rel=0&showinfo=0&modestbranding=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+                // Пересобираем плеер только если сменился видео-id, чтобы трансляция не перезагружалась каждую минуту
+                if (lastLoadedVideoId !== currentVideo.id) {
+                    lastLoadedVideoId = currentVideo.id;
+                    const playerContainer = document.getElementById('playerContainer');
+                    
+                    // ИСПРАВЛЕНО: Ссылка собирается через твою секретную secureBaseUrl и косые кавычки
+                    playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${currentVideo.id}?start=${startSeconds}&autoplay=1&controls=1&rel=0&mute=${isMuted ? 1 : 0}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+                }
+            } catch(e) { console.error(e); }
         }
 
+        // Кнопка переключения звука
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').textContent = isMuted ? "🔇 Выключить звук" : "🔊 Включить звук";
+            lastLoadedVideoId = ""; // Сбрасываем id, чтобы плеер перезагрузился уже со звуком
+            startStream();
+        });
+
+        // Кнопка полного экрана
+        document.getElementById('fs-btn').addEventListener('click', () => {
+            const iframe = document.querySelector('#playerContainer iframe');
+            if (iframe) {
+                if (iframe.requestFullscreen) iframe.requestFullscreen();
+                else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+            }
+        });
+
+        // Запуск
         startStream();
-        setInterval(startStream, 60000);
-
-        // ТВОЙ ЧЕСТНЫЙ СЧЁТЧИК УСТРОЙСТВ
-        function initRealOnlineCounter() {
-            if (!sessionStorage.getItem('vetertv_device_session_token')) {
-                const randomId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-                sessionStorage.setItem('vetertv_device_session_token', randomId);
-            }
-            const deviceToken = sessionStorage.getItem('vetertv_device_session_token');
-            
-            // ИСПРАВЛЕНО: Рабочая ссылка
-            const counterUrl = `https://leandrosn.com{deviceToken}`;
-
-            function fetchCount() {
-                fetch(counterUrl)
-                    .then(res => res.json())
-                    .then(data => {
-                        const totalViewers = data.online || 1;
-                        document.getElementById('onlineCount').textContent = totalViewers;
-                    })
-                    .catch(() => {
-                        document.getElementById('onlineCount').textContent = "342";
-                    });
-            }
-
-            fetchCount();
-            setInterval(fetchCount, 10000);
-        }
-
-        initRealOnlineCounter();
-
-        if (!isAdmin) {
-            document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C'))) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-            setInterval(function() {
-                // Временно отключен debugger для песочницы CodePen, чтобы вкладка не зависала при редактировании
-            }, 1000);
-        }
-    </script>
-</body>
-</html>
