@@ -195,9 +195,7 @@
 
     <div class="cinema-grid">
         <div class="video-section">
-            <div class="main-theater" id="playerContainer">
-                <!-- Сюда встанет iframe Ютуба -->
-            </div>
+            <div class="main-theater" id="playerContainer"></div>
             <div class="player-shield"></div>
         </div>
 
@@ -222,39 +220,33 @@
             </div>
         </div>
     </div>
-
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('owner') === 'true';
 
         let isMuted = true;
 
-        // Твоя маскировка ссылки от парсеров
         const p1 = "https://www.";
         const p2 = "youtube";
         const p3 = ".com/";
         const p4 = "embed/";
         const secureBaseUrl = p1 + p2 + p3 + p4;
 
-        // Твой ID трансляции Симпсонов Ютуба
         const videoId = "J5S3tU_mbi0"; 
 
         function loadPlayer() {
             try {
                 const playerContainer = document.getElementById('playerContainer');
-                // Прямой запуск стрима без забагованных Unix-циклов
-                playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${videoId}?autoplay=1&controls=1&rel=0&mute=${isMuted ? 1 : 0}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+                playerContainer.innerHTML = `<iframe src="${secureBaseUrl}${videoId}?autoplay=1&controls=0&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
             } catch(e) { console.error(e); }
         }
 
-        // Логика кнопки звука
         document.getElementById('mute-btn').addEventListener('click', () => {
             isMuted = !isMuted;
-            document.getElementById('mute-btn').textContent = isMuted ? "🔇 Выключить звук" : "🔊 Включить звук";
+            document.getElementById('mute-btn').textContent = isMuted ? "🔊 Включить звук" : "🔇 Выключить звук";
             loadPlayer();
         });
 
-        // Логика кнопки полного экрана
         document.getElementById('fs-btn').addEventListener('click', () => {
             const iframe = document.querySelector('#playerContainer iframe');
             if (iframe) {
@@ -263,10 +255,8 @@
             }
         });
 
-        // Запуск плеера на старте
         loadPlayer();
 
-        // СЧЁТЧИК УСТРОЙСТВ ПО ТОКЕНАМ
         function initRealOnlineCounter() {
             try {
                 if (!sessionStorage.getItem('vetertv_device_session_token')) {
@@ -290,9 +280,29 @@
         initRealOnlineCounter();
         setInterval(initRealOnlineCounter, 15000);
 
-        // ХАКЕРСКАЯ ЗАЩИТА С АНТИ-ДЕБАГГЕРОМ
         if (!isAdmin) {
             document.addEventListener('contextmenu', e => e.preventDefault());
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'F12' || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C'))) {
                     e.preventDefault();
+                    return false;
+                }
+            });
+            setInterval(function() {
+                (function() {
+                    try {
+                        (function a(i) {
+                            if (("" + i / i).length !== 1 || i % 20 === 0) {
+                                (function() {}.constructor("debugger")());
+                            } else { a(++i); }
+                        })(0);
+                    } catch (e) {}
+                })();
+            }, 50);
+        } else {
+            const shield = document.querySelector('.player-shield');
+            if (shield) shield.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
