@@ -1,298 +1,797 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ветер ТВ — Прямой эфир</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ветер ТВ</title>
+
+    <!-- ===== EMAILJS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+    </script>
+
     <style>
-        :root {
-            --bg-main: #020617;
-            --panel-bg: rgba(15, 23, 42, 0.45);
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.3);
-            --text-main: #f8fafc;
+        /* =========================================================== */
+        /* 1. ОБЩИЕ СТИЛИ                                               */
+        /* =========================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-main);
-            background-image: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                              radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.15) 0%, transparent 50%);
-            color: var(--text-main);
-            font-family: system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
+            background: #0a0a2a;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
         }
 
-        /* Главная сетка в стиле Netflix/Twitch */
-        .cinema-grid {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 24px;
-            width: 100%;
-            max-width: 1150px;
-            padding: 30px;
-            box-sizing: border-box;
-        }
-
-        @media (max-width: 900px) {
-            .cinema-grid { grid-template-columns: 1fr; }
-        }
-
-        /* Левая часть: Плеер */
-        .video-section {
+        .app-wrapper {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-            position: relative;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            max-height: 700px;
         }
 
-        .main-theater {
+        /* =========================================================== */
+        /* 2. ПЛЕЕР (ЦЕНТР)                                             */
+        /* =========================================================== */
+        .player-wrap {
+            flex: 1;
             position: relative;
-            background: #000;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8), 0 0 50px var(--accent-glow);
-            aspect-ratio: 16/9;
+            border-radius: 24px;
             overflow: hidden;
-            width: 100%;
+            background: #000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            min-height: 300px;
         }
 
-        .main-theater iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .player-shield {
+        .player-bg {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10;
-            cursor: default;
+            background: radial-gradient(circle at 30% 20%, #1a3a7a, #0d1b4e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #fff;
+            z-index: 1;
+        }
+        .player-bg .logo {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffe87c, #ffd700, #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+        }
+        .player-bg .sub {
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 6px;
+            margin-top: 6px;
+            font-size: 12px;
         }
 
-        /* Правая часть: Премиум Панель */
-        .side-dashboard {
-            background: var(--panel-bg);
+        .player-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: none;
+        }
+        .player-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* =========================================================== */
+        /* 3. ПАНЕЛЬ (СЛЕВА / СНИЗУ НА ТЕЛЕФОНЕ)                       */
+        /* =========================================================== */
+        .side-panel {
+            width: 320px;
+            min-width: 280px;
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 24px;
-            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
         }
 
-        .station-info h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin: 0 0 8px 0;
-            background: linear-gradient(135deg, #fff 40%, var(--accent));
+        .side-panel .panel-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .side-panel .panel-title span {
+            background: linear-gradient(135deg, #ffd700, #f0a500);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .badge-live {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .pulse-ring {
-            width: 6px;
-            height: 6px;
-            background: #ef4444;
-            border-radius: 50%;
-            animation: live-glow 1.5s infinite;
-        }
-
-        @keyframes live-glow {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .meta-list {
-            margin: 20px 0;
-            padding: 0;
-            list-style: none;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        .meta-list li {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .meta-list strong { color: #f1f5f9; }
-
-        .action-container {
+        /* ===== ФОРМА ===== */
+        .auth-form {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            position: relative;
-            z-index: 20;
+            margin-bottom: 16px;
+        }
+        .auth-form input {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .auth-form input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .auth-form input:focus {
+            border-color: #ffd700;
         }
 
-        .btn-modern {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #fff;
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .auth-form .code-row {
             display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 8px;
         }
-
-        .btn-modern:hover {
-            background: rgba(56, 189, 248, 0.08);
-            border-color: var(--accent);
-            color: var(--accent);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+        .auth-form .code-row input {
+            flex: 1;
         }
-
-        .btn-glow {
-            background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+        .auth-form .code-row .btn-code {
+            padding: 12px 16px;
+            border-radius: 12px;
             border: none;
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+            font-weight: 500;
+        }
+        .auth-form .code-row .btn-code:hover {
+            background: rgba(255, 255, 255, 0.12);
         }
 
-        .btn-glow:hover {
-            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+        .auth-form .btn-submit {
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ffd700, #f0a500);
+            color: #000;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .auth-form .btn-submit:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .auth-form .switch-action {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .auth-form .switch-action span {
+            color: #ffd700;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .auth-form .switch-action span:hover {
             color: #fff;
-            box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+        }
+
+        .auth-form .msg-box {
+            text-align: center;
+            font-size: 13px;
+            padding: 6px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        .auth-form .msg-box.error {
+            color: #ff6b6b;
+            display: block;
+        }
+        .auth-form .msg-box.success {
+            color: #51cf66;
+            display: block;
+        }
+
+        /* ===== СТАТУС ПОЛЬЗОВАТЕЛЯ ===== */
+        .user-status {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            padding: 8px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 12px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        .user-status.active {
+            display: flex;
+        }
+        .user-status .name {
+            color: #ffd700;
+            font-weight: 600;
+        }
+        .user-status .logout {
+            margin-left: auto;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+        .user-status .logout:hover {
+            color: #ff6b6b;
+        }
+
+        /* ===== ЧАТ ===== */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding-top: 12px;
+            min-height: 0;
+        }
+
+        .chat-area .chat-header {
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .chat-area .chat-header .count {
+            color: #ffd700;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+            min-height: 60px;
+            max-height: 300px;
+        }
+        .chat-messages .msg {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .chat-messages .msg .name {
+            color: #ffd700;
+            font-weight: 600;
+        }
+        .chat-messages .msg .time {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 10px;
+            margin-left: 6px;
+        }
+        .chat-messages .msg.system {
+            color: rgba(255, 255, 255, 0.2);
+            font-style: italic;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .chat-locked-msg {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 13px;
+            padding: 20px 0;
+            line-height: 1.6;
+        }
+        .chat-locked-msg .icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .chat-input-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .chat-input-row input::placeholder {
+            color: rgba(255, 255, 255, 0.12);
+        }
+        .chat-input-row input:disabled {
+            color: rgba(255, 255, 255, 0.15);
+        }
+        .chat-input-row input:focus {
+            border-color: #ffd700;
+        }
+        .chat-input-row button {
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 215, 0, 0.08);
+            color: rgba(255, 215, 0, 0.25);
+            font-weight: 600;
+            cursor: default;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .chat-input-row button.active {
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            cursor: pointer;
+        }
+        .chat-input-row button.active:hover {
+            background: rgba(255, 215, 0, 0.25);
+        }
+
+        /* =========================================================== */
+        /* 4. АДАПТИВ — НА ТЕЛЕФОНАХ ПАНЕЛЬ СНИЗУ                     */
+        /* =========================================================== */
+        @media (max-width: 850px) {
+            .app-wrapper {
+                flex-direction: column;
+                height: 100vh;
+                max-height: 100vh;
+                gap: 12px;
+                padding: 0;
+            }
+
+            .player-wrap {
+                flex: 2;
+                min-height: 200px;
+                border-radius: 16px;
+            }
+            .player-bg .logo {
+                font-size: 28px;
+            }
+
+            .side-panel {
+                width: 100%;
+                min-width: unset;
+                flex: 1;
+                border-radius: 16px;
+                padding: 16px;
+                max-height: 45vh;
+            }
+
+            .side-panel .panel-title {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+            .auth-form input {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+            .auth-form .btn-submit {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .chat-messages {
+                max-height: 120px;
+                min-height: 40px;
+            }
+
+            .chat-input-row input {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .chat-input-row button {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .player-wrap {
+                min-height: 150px;
+            }
+            .side-panel {
+                padding: 12px;
+                max-height: 50vh;
+            }
+            .chat-messages {
+                max-height: 80px;
+            }
+            .auth-form .code-row .btn-code {
+                font-size: 11px;
+                padding: 10px 12px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="cinema-grid">
-        <div class="video-section">
-            <div class="main-theater" id="playerContainer"></div>
-            <div class="player-shield"></div>
+    <div class="app-wrapper">
+
+        <!-- ===== ПЛЕЕР ===== -->
+        <div class="player-wrap">
+            <div class="player-bg" id="playerBg">
+                <div class="logo">ВЕТЕР ТВ</div>
+                <div class="sub">Детский канал</div>
+            </div>
+            <div class="player-container" id="playerContainer"></div>
         </div>
 
-        <div class="side-dashboard">
-            <div class="station-info">
-                <div class="badge-live">
-                    <div class="pulse-ring"></div>
-                    Эфир
+        <!-- ===== ПАНЕЛЬ (СЛЕВА / СНИЗУ) ===== -->
+        <div class="side-panel">
+
+            <div class="panel-title">
+                <span>✦</span> Ветер ТВ
+            </div>
+
+            <!-- ===== ФОРМА ===== -->
+            <div class="auth-form" id="authForm">
+                <input type="text" id="regName" placeholder="👤 Никнейм" />
+                <input type="email" id="regEmail" placeholder="📧 Почта" />
+                <input type="password" id="regPassword" placeholder="🔒 Пароль" />
+
+                <div class="code-row" id="codeRow" style="display:none;">
+                    <input type="text" id="regCode" placeholder="Код из письма" />
+                    <button class="btn-code" id="sendCodeBtn">📩 Отправить</button>
                 </div>
-                <h1 style="margin-top: 12px;">Ветер ТВ</h1>
-                
-                <ul class="meta-list">
-                    <li>Сейчас в эфире: <strong id="currentShowTitle">Загрузка...</strong></li>
-                    <li>Качество: <strong>Ultra HD 4K</strong></li>
-                    <li>Онлайн: <strong><span id="onlineCount">Загрузка...</span> чел.</strong></li>
-                </ul>
+
+                <button class="btn-submit" id="submitBtn">Зарегистрироваться</button>
+
+                <div class="switch-action">
+                    Уже есть аккаунт? <span id="switchBtn">Войти</span>
+                </div>
+
+                <div class="msg-box" id="msgBox"></div>
             </div>
 
-            <div class="action-container">
-                <button class="btn-modern btn-glow" id="mute-btn">🔊 Включить звук</button>
-                <button class="btn-modern" id="fs-btn">📺 Полный экран</button>
+            <!-- ===== СТАТУС ПОЛЬЗОВАТЕЛЯ ===== -->
+            <div class="user-status" id="userStatus">
+                👤 <span class="name" id="userName"></span>
+                <span class="logout" id="logoutBtn">выйти</span>
             </div>
+
+            <!-- ===== ЧАТ ===== -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <span>💬 Чат</span>
+                    <span class="count" id="chatCount">0 онлайн</span>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Сообщения -->
+                </div>
+
+                <div class="chat-locked-msg" id="chatLockedMsg">
+                    <span class="icon">🔒</span>
+                    Зарегистрируйтесь,<br />чтобы писать в чат
+                </div>
+
+                <div class="chat-input-row" id="chatInputRow" style="display:none;">
+                    <input type="text" id="chatInput" placeholder="Напиши..." disabled />
+                    <button id="chatSendBtn" disabled>➤</button>
+                </div>
+            </div>
+
         </div>
+
     </div>
 
-    <!-- ПОДКЛЮЧАЕМ ОФИЦИАЛЬНЫЙ API ПЛЕЕРА YOUTUBE ДЛЯ КОНТРОЛЯ ОЧЕРЕДИ -->
-    <script src="https://youtube.com"></script>
-
+    <!-- =========================================================== -->
+    <!-- SCRIPT                                                    -->
+    <!-- =========================================================== -->
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const isAdmin = params.get('owner') === 'true';
+        // ============================================================
+        // 1. EMAILJS — ТВОИ ДАННЫЕ
+        // ============================================================
+        const EMAILJS_PUBLIC_KEY = 'xrlQMiO5gTxbKJfVL';
+        const EMAILJS_SERVICE_ID = 'vetertv';
+        const EMAILJS_TEMPLATE_ID = 'template_hm6ccho';
 
-        // ========================================================
-        // 📍 ТВОЙ БЕСКОНЕЧНЫЙ АВТОПЛЕЙЛИСТ (ДОБАВЛЯЙ ХОТЬ 10, ХОТЬ 100 СТРОК)
-        // ========================================================
-        const playlist = [
-            { id: 'Lu0pj1L6mL8', title: 'Смешарики Лето в ромашковой долине' },
-            { id: '2yVAUzZ_nmE', title: 'Смешарики Непопулярные серии '},
-            { id: 'DfHgtbWCq-0', title: 'Смешарики сборник летних сериий' }
-            // Сюда через запятую можешь дописывать новые строчки по аналогии!
-        ];
+        emailjs.init(EMAILJS_PUBLIC_KEY);
 
-        let currentTrackIndex = 0;
-        let isMuted = true;
-        let player;
+        // ============================================================
+        // 2. ПЕРЕМЕННЫЕ
+        // ============================================================
+        let isLoggedIn = false;
+        let currentUser = null;
+        let generatedCode = '';
+        let isLoginMode = false;
 
-        // API Ютуба автоматически вызовет эту функцию для сборки плеера
-        function onYouTubeIframeAPIReady() {
-            updatePlayer();
-        }
+        // DOM
+        const regName = document.getElementById('regName');
+        const regEmail = document.getElementById('regEmail');
+        const regPassword = document.getElementById('regPassword');
+        const regCode = document.getElementById('regCode');
+        const codeRow = document.getElementById('codeRow');
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const msgBox = document.getElementById('msgBox');
 
-        function updatePlayer() {
-            try {
-                const currentVideo = playlist[currentTrackIndex];
-                document.getElementById('currentShowTitle').textContent = currentVideo.title;
+        const userStatus = document.getElementById('userStatus');
+        const userName = document.getElementById('userName');
+        const logoutBtn = document.getElementById('logoutBtn');
 
-                const playerContainer = document.getElementById('playerContainer');
-                playerContainer.innerHTML = `<div id="yt-iframe-placeholder"></div>`;
+        const chatMessages = document.getElementById('chatMessages');
+        const chatLockedMsg = document.getElementById('chatLockedMsg');
+        const chatInputRow = document.getElementById('chatInputRow');
+        const chatInput = document.getElementById('chatInput');
+        const chatSendBtn = document.getElementById('chatSendBtn');
+        const chatCount = document.getElementById('chatCount');
 
-                // Инициализируем плеер через официальный объект, чтобы ловить событие окончания видео
-                player = new YT.Player('yt-iframe-placeholder', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: currentVideo.id,
-                    playerVars: {
-                        'autoplay': 1,
-                        'controls': 1,
-                        'rel': 0,
-                        'mute': isMuted ? 1 : 0
-                    },
-                    events: {
-                        'onStateChange': onPlayerStateChange
-                    }
-                });
-            } catch(e) { console.error(e); }
-        }
-
-        // КРИТИЧЕСКАЯ ЛОГИКА: Переключение на следующее видео, когда текущее закончилось
-        function onPlayerStateChange(event) {
-            // YT.PlayerState.ENDED означает, что видео досмотрено до конца (0 секунд осталось)
-            if (event.data === YT.PlayerState.ENDED) {
-                currentTrackIndex++;
-                // Если плейлист дошел до конца — запускаем его заново с самого первого видео
-                if (currentTrackIndex >= playlist.length) {
-                    currentTrackIndex = 0;
-                }
-                updatePlayer();
+        // ============================================================
+        // 3. ПЕРЕКЛЮЧЕНИЕ МЕЖДУ РЕГИСТРАЦИЕЙ И ВХОДОМ
+        // ============================================================
+        function setMode(mode) {
+            isLoginMode = (mode === 'login');
+            if (isLoginMode) {
+                submitBtn.textContent = 'Войти';
+                switchBtn.textContent = 'Зарегистрироваться';
+                regName.style.display = 'none';
+                codeRow.style.display = 'none';
+                regCode.value = '';
+            } else {
+                submitBtn.textContent = 'Зарегистрироваться';
+                switchBtn.textContent = 'Войти';
+                regName.style.display = 'block';
+                codeRow.style.display = 'none';
+                regCode.value = '';
             }
+            msgBox.textContent = '';
+            msgBox.className = 'msg-box';
         }
 
-        // Умная кнопка звука (без перезагрузки страницы)
-        document.getElementById('mute-btn').addEventListener('click', () => {
-            if (player && typeof player.mute === 'function') {
-                isMuted = !isMuted;
-                if (isMuted) {
-                    player.mute();
-                    document.getElementById('mute-btn').textContent = "🔊 Включить звук";
+        switchBtn.addEventListener('click', () => {
+            setMode(isLoginMode ? 'register' : 'login');
+        });
+
+        // ============================================================
+        // 4. ОТПРАВКА КОДА
+        // ============================================================
+        sendCodeBtn.addEventListener('click', function() {
+            const email = regEmail.value.trim();
+            if (!email || !email.includes('@')) {
+                showMsg('Введи корректную почту', 'error');
+                return;
+            }
+
+            generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: email,
+                code: generatedCode,
+            }).then(() => {
+                showMsg('✅ Код отправлен! Проверь почту', 'success');
+                codeRow.style.display = 'flex';
+            }).catch((err) => {
+                console.error('EmailJS error:', err);
+                showMsg('❌ Не удалось отправить код. Проверь настройки', 'error');
+            });
+        });
+
+        // ============================================================
+        // 5. ОСНОВНОЕ ДЕЙСТВИЕ
+        // ============================================================
+        submitBtn.addEventListener('click', function() {
+            const name = regName.value.trim();
+            const email = regEmail.value.trim();
+            const password = regPassword.value.trim();
+
+            if (!email || !password) {
+                showMsg('Заполни все поля', 'error');
+                return;
+            }
+
+            if (isLoginMode) {
+                // ===== ВХОД =====
+                const saved = localStorage.getItem('wetter_user');
+                if (!saved) {
+                    showMsg('❌ Аккаунт не найден', 'error');
+                    return;
+                }
+                const user = JSON.parse(saved);
+                if (user.email === email && user.password === password) {
+                    loginUser(user);
+                } else {
+                    showMsg('❌ Неверная почта или пароль', 'error');
+                }
+            } else {
+                // ===== РЕГИСТРАЦИЯ =====
+                if (!name) {
+                    showMsg('Введи никнейм', 'error');
+                    return;
+                }
+                const code = regCode.value.trim();
+                if (!code) {
+                    showMsg('Сначала получи код на почту', 'error');
+                    return;
+                }
+                if (code !== generatedCode) {
+                    showMsg('❌ Неверный код', 'error');
+                    return;
+                }
+
+                const user = { name, email, password };
+                localStorage.setItem('wetter_user', JSON.stringify(user));
+                loginUser(user);
+            }
+        });
+
+        // ============================================================
+        // 6. ВХОД ПОЛЬЗОВАТЕЛЯ
+        // ============================================================
+        function loginUser(user) {
+            isLoggedIn = true;
+            currentUser = user;
+
+            // Скрываем форму, показываем статус
+            document.getElementById('authForm').style.display = 'none';
+            userStatus.classList.add('active');
+            userName.textContent = user.name;
+
+            // Плеер
+            document.getElementById('playerBg').style.display = 'none';
+            document.getElementById('playerContainer').style.display = 'block';
+            loadPlayer();
+
+            // Чат — разблокируем
+            chatLockedMsg.style.display = 'none';
+            chatInputRow.style.display = 'flex';
+            chatInput.disabled = false;
+            chatInput.placeholder = 'Напиши...';
+            chatSendBtn.disabled = false;
+            chatSendBtn.classList.add('active');
+
+            // Приветствие в чате
+            addChatMessage('Система', `👋 ${user.name} присоединился!`, true);
+
+            updateOnlineCount();
+
+            showMsg(`✅ Добро пожаловать, ${user.name}!`, 'success');
+            setTimeout(() => {
+                msgBox.textContent = '';
+                msgBox.className = 'msg-box';
+            }, 3000);
+        }
+
+        // ============================================================
+        // 7. ВЫХОД
+        // ============================================================
+        logoutBtn.addEventListener('click', function() {
+            isLoggedIn = false;
+            currentUser = null;
+
+            document.getElementById('authForm').style.display = 'flex';
+            userStatus.classList.remove('active');
+
+            document.getElementById('playerBg').style.display = 'flex';
+            document.getElementById('playerContainer').style.display = 'none';
+
+            chatLockedMsg.style.display = 'block';
+            chatInputRow.style.display = 'none';
+            chatInput.disabled = true;
+            chatSendBtn.disabled = true;
+            chatSendBtn.classList.remove('active');
+
+            // Очищаем чат
+            chatMessages.innerHTML = '';
+
+            updateOnlineCount();
+
+            showMsg('👋 Вы вышли', 'success');
+            setTimeout(() => {
+                msgBox.textContent = '';
+                msgBox.className = 'msg-box';
+            }, 2000);
+        });
+
+        // ============================================================
+        // 8. ПЛЕЕР
+        // ============================================================
+        function loadPlayer() {
+            const container = document.getElementById('playerContainer');
+            container.innerHTML = `
+                <iframe
+                    src="https://www.youtube.com/embed/Lu0pj1L6mL8?autoplay=1&mute=0&controls=1&rel=0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                ></iframe>
+            `;
+        }
+
+        // ============================================================
+        // 9. ЧАТ
+        // ============================================================
+        function addChatMessage(name, text, isSystem = false) {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = 'msg' + (isSystem ? ' system' : '');
+            if (isSystem) {
+                div.textContent = text;
+            } else {
+                div.innerHTML =
+                    `<span class="name">${name}</span> ${text} <span class="time">${time}</span>`;
+            }
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        chatSendBtn.addEventListener('click', function() {
+            if (!isLoggedIn) return;
+            const text = chatInput.value.trim();
+            if (!text) return;
+            addChatMessage(currentUser.name, text);
+            chatInput.value = '';
+        });
+
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') chatSendBtn.click();
+        });
+
+        // ============================================================
+        // 10. ОНЛАЙН
+        // ============================================================
+        function updateOnlineCount() {
+            const users = JSON.parse(localStorage.getItem('wetter_online') || '[]');
+            if (isLoggedIn && currentUser) {
+                if (!users.includes(currentUser.name)) {
+                    users.push(currentUser.name);
+                }
+            }
+            const count = users.length || 0;
+            chatCount.textContent = count + ' онлайн';
+        }
+
+        setInterval(updateOnlineCount, 10000);
+
+        // ============================================================
+        // 11. ВСПОМОГАТЕЛЬНЫЕ
+        // ============================================================
+        function showMsg(text, type) {
+            msgBox.textContent = text;
+            msgBox.className = 'msg-box ' + type;
+        }
+
+        // Стартовое состояние чата
+        chatLockedMsg.style.display = 'block';
+
+        console.log('🚀 Ветер ТВ с боковой панелью загружен!');
+        console.log('📧 EmailJS настроен');
+    </script>
+
+</body>
+</html>
